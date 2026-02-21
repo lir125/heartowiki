@@ -43,7 +43,7 @@ def get_data_dir() -> Path:
             "github_data_branch": "main",
             "update_source": "github",
             "update_info_file_id": "",
-            "github_update_path": "",
+            "github_update_path": "app_version.json",
         }
         config_file.write_text(json.dumps(default_config, ensure_ascii=False, indent=2), encoding="utf-8")
     return data_dir
