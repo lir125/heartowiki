@@ -678,7 +678,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                     if (result.success) {
                         updateHint.textContent = '업데이트 적용 중입니다. 앱이 곧 종료된 뒤 다시 실행됩니다.';
                         btnApply.textContent = '종료 중...';
-                        setTimeout(function() { api.exit_app(); }, 1500);
+                        setTimeout(function() { api.exit_app(); }, 600);
                     } else {
                         btnApply.disabled = false;
                         btnApply.textContent = '업데이트 적용';
