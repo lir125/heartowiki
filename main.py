@@ -293,7 +293,8 @@ def _download_exe_from_drive(file_id: str, save_path: Path) -> bool:
 
 def apply_update(download_url: str = "", drive_file_id: str = "") -> dict:
     """
-    새 exe를 다운로드한 뒤 현재 exe를 교체하고 재시작.
+    새 exe를 다운로드한 뒤, 실행 중인 exe를 같은 경로·같은 파일 이름으로 교체하고 재시작.
+    (사용자가 바탕화면에서 '두타위키.exe'로 실행했다면, 업데이트 후에도 같은 위치 같은 이름으로 유지)
     - download_url: GitHub 등 직접 다운로드 URL (우선)
     - drive_file_id: 구글 드라이브 파일 ID
     반환: { success: bool, error: str 또는 빈 문자열 }
@@ -306,6 +307,7 @@ def apply_update(download_url: str = "", drive_file_id: str = "") -> dict:
             webbrowser.open(f"https://drive.google.com/uc?export=download&id={drive_file_id}")
         return {"success": False, "error": "exe로 실행 중일 때만 자동 업데이트가 가능합니다."}
 
+    # 현재 실행 중인 exe 경로 = 원래 위치 + 원래 이름 (업데이트 후에도 동일하게 유지)
     exe_path = Path(sys.executable).resolve()
     exe_dir = exe_path.parent
     new_path = exe_dir / (exe_path.stem + "_new" + exe_path.suffix)
@@ -320,12 +322,15 @@ def apply_update(download_url: str = "", drive_file_id: str = "") -> dict:
     if not ok or not new_path.exists():
         return {"success": False, "error": "다운로드에 실패했습니다."}
 
+    # 배치: 새 exe를 원래 위치·원래 이름으로 덮어쓴 뒤 재시작
+    exe_path_str = str(exe_path)
+    new_path_str = str(new_path)
     batch_content = f'''@echo off
 chcp 65001 >nul
 timeout /t 2 /nobreak >nul
-copy /Y "{new_path}" "{exe_path}"
-start "" "{exe_path}"
-del "{new_path}"
+copy /Y "{new_path_str}" "{exe_path_str}"
+start "" "{exe_path_str}"
+del "{new_path_str}"
 (del "%~f0" 2>nul)
 exit
 '''

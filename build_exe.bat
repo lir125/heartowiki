@@ -29,15 +29,15 @@ echo Creating icon.ico from icon.png...
 python png_to_ico.py
 if exist icon.ico (
     echo Using icon.ico
-    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.ico --add-data "index.html;." main.py
+    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.ico --add-data "index.html;." --distpath . --workpath build --specpath . main.py
 ) else (
     echo Warning: icon.ico not created, using icon.png
-    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.png --add-data "index.html;." main.py
+    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.png --add-data "index.html;." --distpath . --workpath build --specpath . main.py
 )
 
-if exist dist\Heartowiki.exe (
+if exist Heartowiki.exe (
     echo.
-    echo Done. See dist\Heartowiki.exe
+    echo Done. See Heartowiki.exe
 ) else (
     echo Build failed.
     exit /b 1
