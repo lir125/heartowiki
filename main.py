@@ -25,7 +25,7 @@ except ImportError:
     load_workbook = None
 
 # 앱 버전 (앱 업데이트 확인 시 비교용)
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 
 # 리소스 경로 (exe 빌드 시)
 def get_resource_dir():
