@@ -107,7 +107,6 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         <div class="action-row">
             <label><input type="checkbox" id="hideCompleted"> 수집 완료 숨김</label>
             <button type="button" id="btnRefresh" class="primary">🔄 데이터 새로고침</button>
-            <button type="button" id="btnAppUpdate">📦 업데이트 확인</button>
         </div>
     </div>
     </div>
@@ -120,7 +119,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             <h2>📦 업데이트</h2>
             <p id="updateMessage" style="margin-bottom:16px; color:var(--text-secondary);"></p>
             <p id="updateDataHint" style="font-size:13px; color:var(--pink-600); margin-bottom:12px; display:none;"></p>
-            <p id="updateHint" style="font-size:13px; color:var(--text-tertiary); margin-bottom:16px;">아래 버튼을 누르면 새 버전을 받아 앱이 자동으로 교체·재시작됩니다.</p>
+            <p id="updateHint" style="font-size:13px; color:var(--text-tertiary); margin-bottom:16px;">아래 버튼을 누르면 새 버전을 받아 앱이 종료됩니다. 같은 위치에서 다시 실행해 주세요.</p>
             <button type="button" id="btnUpdateApply" class="btn-save" style="width:100%; margin-bottom:8px;">업데이트 적용</button>
             <button type="button" id="btnUpdateDownload" class="btn-save" style="width:100%; background:var(--pink-300);">브라우저로 다운로드</button>
         </div>
@@ -431,7 +430,6 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => this.render());
             });
             document.getElementById('btnRefresh').addEventListener('click', () => this.refreshFromDrive());
-            document.getElementById('btnAppUpdate').addEventListener('click', checkAppUpdate);
             document.getElementById('darkModeToggle').addEventListener('click', () => {
                 const isDark = document.body.classList.toggle('dark');
                 const st = Storage.loadSettings();
@@ -677,7 +675,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 btnApply.textContent = '다운로드 중...';
                 api.apply_update(downloadUrl, driveFileId).then(function(result) {
                     if (result.success) {
-                        updateHint.textContent = '업데이트 적용 중입니다. 앱이 곧 종료된 뒤 다시 실행됩니다.';
+                        updateHint.textContent = '업데이트 적용 중입니다. 앱이 종료되면 같은 위치에서 다시 실행해 주세요.';
                         btnApply.textContent = '종료 중...';
                         setTimeout(function() { api.exit_app(); }, 600);
                     } else {

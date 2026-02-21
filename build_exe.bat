@@ -27,13 +27,8 @@ if errorlevel 1 (
 echo.
 echo Creating icon.ico from icon.png...
 python png_to_ico.py
-if exist icon.ico (
-    echo Using icon.ico
-    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.ico --add-data "index.html;." --distpath . --workpath build --specpath . main.py
-) else (
-    echo Warning: icon.ico not created, using icon.png
-    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.png --add-data "index.html;." --distpath . --workpath build --specpath . main.py
-)
+echo Building onefile (Heartowiki.spec, python312.dll 포함)...
+pyinstaller --noconfirm --distpath . --workpath build Heartowiki.spec
 
 if exist Heartowiki.exe (
     echo.

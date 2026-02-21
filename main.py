@@ -25,7 +25,7 @@ except ImportError:
     load_workbook = None
 
 # 앱 버전 (앱 업데이트 확인 시 비교용)
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.1"
 
 # 리소스 경로 (exe 빌드 시)
 def get_resource_dir():
@@ -325,20 +325,22 @@ def apply_update(download_url: str = "", drive_file_id: str = "") -> dict:
     if not ok or not new_path.exists():
         return {"success": False, "error": "다운로드에 실패했습니다."}
 
-    # 배치: 프로세스 종료 → 잠금 해제 대기 → 복사 → 재시작 (너무 빨리 하면 복사 실패·원본 덮어쓰기 오류)
+    # 배치: 프로세스 종료 → 원본을 _old로 이름 변경(백업) → 새 exe를 원래 이름으로 변경 → 재시작 (복사 없이 rename만 사용해 원본 삭제/손상 방지)
     pid = os.getpid()
     exe_path_str = str(exe_path)
     new_path_str = str(new_path)
+    backup_name = exe_path.stem + "_old" + exe_path.suffix
+    original_name = exe_path.name
     batch_content = f'''@echo off
 chcp 65001 >nul
 timeout /t 3 /nobreak >nul
 taskkill /PID {pid} /F >nul 2>&1
 timeout /t 5 /nobreak >nul
-copy /Y "{new_path_str}" "{exe_path_str}"
-timeout /t 2 /nobreak >nul
+ren "{exe_path_str}" "{backup_name}"
+timeout /t 1 /nobreak >nul
+ren "{new_path_str}" "{original_name}"
+del "{backup_name}" 2>nul
 start "" "{exe_path_str}"
-timeout /t 2 /nobreak >nul
-del "{new_path_str}"
 (del "%~f0" 2>nul)
 exit
 '''
