@@ -14,6 +14,7 @@ except ImportError:
 def main():
     # 같은 폴더 또는 상위 폴더에서 xlsx 찾기
     candidates = [
+        Path(__file__).parent / "heartowiki.xlsx",
         Path(__file__).parent / "두근두근타운 도감 정보.xlsx",
         Path(__file__).parent.parent / "두근두근타운 도감 정보.xlsx",
         Path.home() / "Desktop" / "두근두근타운 도감 정보.xlsx",

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>두근두근타운 도감</title>
+    <title>두타위키</title>
     <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -11,9 +11,18 @@
     --text-primary: #212121; --text-secondary: #616161; --text-tertiary: #9e9e9e; --border: #e0e0e0;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.08); --shadow-md: 0 4px 12px rgba(0,0,0,0.12); --shadow-lg: 0 12px 24px rgba(0,0,0,0.16);
 }
+body.dark {
+    --bg-main: #1a1a1a; --bg-card: #2d2d2d; --pink-50: #3a3a3a; --pink-100: #404040; --pink-200: #505050; --pink-300: #606060; --pink-400: #888; --pink-500: #aaa; --pink-600: #ccc;
+    --text-primary: #e8e8e8; --text-secondary: #b0b0b0; --text-tertiary: #808080; --border: #404040;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.4); --shadow-lg: 0 12px 24px rgba(0,0,0,0.5);
+}
 body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text-primary); line-height: 1.6; padding-bottom: 100px; }
-header { background: var(--bg-card); padding: 40px 24px 32px; text-align: center; border-bottom: 1px solid var(--border); }
+.sticky-top { position: sticky; top: 0; z-index: 100; background: var(--bg-main); }
+header { background: var(--bg-card); padding: 40px 24px 32px; text-align: center; border-bottom: 1px solid var(--border); position: relative; }
 .title-wrap { margin: 0 auto; max-width: 480px; }
+.dark-mode-toggle { position: absolute; top: 16px; right: 24px; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-card); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+.dark-mode-toggle:hover { background: var(--pink-50); }
+body.dark .dark-mode-toggle { background: var(--pink-100); }
 h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.03em; line-height: 1.2; }
 .title-sub { font-size: 0.85rem; color: var(--text-tertiary); margin-top: 8px; }
 .empty-hint { margin-top: 14px; font-size: 0.8rem; color: var(--text-secondary); }
@@ -23,24 +32,27 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 .tab-btn:hover { background: var(--pink-50); }
 .tab-btn.active { background: var(--pink-500); color: white; border-color: var(--pink-500); }
 .count { font-size: 12px; opacity: 0.8; margin-left: 6px; }
-.controls { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+.controls { max-width: 1200px; margin: 24px auto; padding: 0 24px 8px; }
 .filter-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
 .search-box { flex: 1; min-width: 160px; }
 .search-box input, .filter-row select { height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); width: 100%; }
 .filter-row select { width: 130px; }
-.action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
 .action-row label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
 .action-row button { height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); }
 .action-row button:hover { background: var(--pink-50); color: var(--text-primary); }
 .action-row button.primary { background: var(--pink-500); color: white; border-color: var(--pink-500); }
-.grid { max-width: 640px; margin: 0 auto; padding: 0 24px; }
-.list-item { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 8px; overflow: hidden; transition: box-shadow 0.2s; }
+.grid { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-content: start; }
+.list-item { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.2s; }
 .list-item:hover { box-shadow: var(--shadow-sm); }
 .list-item.collected { opacity: 0.6; }
+.list-item.open { grid-column: 1 / -1; z-index: 1; }
+.list-item-ghost { opacity: 0.45; cursor: pointer; position: relative; z-index: 15; pointer-events: auto; }
+.list-item-ghost .list-item-detail { display: none !important; pointer-events: none; }
 .list-item-name { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
-.list-item-name .icon { font-size: 22px; width: 32px; text-align: center; }
-.list-item-name .name { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; }
-.list-item-name .chevron { font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; }
+.list-item-name .icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
+.list-item-name .name { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; }
+.list-item-name .chevron { font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; flex-shrink: 0; }
 .list-item.open .list-item-name .chevron { transform: rotate(180deg); }
 .list-item-detail { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
 .list-item.open .list-item-detail { display: block; padding-top: 12px; }
@@ -50,34 +62,31 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 .star-rating { display: flex; gap: 2px; font-size: 14px; margin-top: 8px; }
 .star { cursor: pointer; color: #e0e0e0; }
 .star.filled { color: #FFD700; }
-.list-item-delete { float: right; width: 28px; height: 28px; background: var(--pink-50); border: 1px solid var(--border); border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 8px; }
-.list-item-delete:hover { background: var(--pink-500); color: white; }
-.fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; background: var(--pink-500); color: white; border: none; border-radius: 50%; font-size: 22px; cursor: pointer; box-shadow: var(--shadow-lg); z-index: 1000; }
-.fab:hover { transform: scale(1.05); }
+.detail-row-price .star-adj { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); cursor: pointer; font-size: 16px; line-height: 1; color: var(--text-secondary); }
+.detail-row-price .star-adj:hover { background: var(--pink-50); color: var(--text-primary); }
+.detail-row-price .star-display { font-size: 13px; color: var(--text-secondary); min-width: 1.8em; text-align: center; }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; justify-content: center; align-items: center; }
 .modal.show { display: flex; }
 .modal-content { background: var(--bg-card); border-radius: 16px; padding: 24px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: var(--shadow-lg); }
 .modal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: var(--pink-50); border: none; border-radius: 50%; font-size: 18px; cursor: pointer; }
 .modal-close:hover { background: var(--pink-500); color: white; }
 .modal-content h2 { margin-bottom: 20px; font-size: 20px; }
-.modal-content form { display: flex; flex-direction: column; gap: 12px; }
-.modal-content input, .modal-content select { height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); }
-.file-input-btn { background: var(--pink-50); border: 1px solid var(--pink-200); height: 42px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--pink-600); font-size: 13px; }
-.file-input-wrapper input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.image-preview { max-height: 160px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
 .btn-save { background: var(--pink-500); color: white; height: 42px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 24px; color: var(--text-tertiary); }
 .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
-.loading { text-align: center; padding: 40px; color: var(--text-tertiary); }
+.loading { text-align: center; padding: 40px; color: var(--text-tertiary); grid-column: 1/-1; }
     </style>
 </head>
 <body>
+    <div class="sticky-top">
     <header>
+        <button type="button" id="darkModeToggle" class="dark-mode-toggle" title="다크 모드">🌙</button>
         <div class="title-wrap">
-            <h1>두근두근타운 도감</h1>
+            <h1>두타위키</h1>
             <p class="title-sub">어류 · 곤충 · 조류 · 요리</p>
             <p id="versionInfo" class="title-sub" style="margin-top:4px; font-size:0.75rem; color:var(--text-tertiary);"></p>
-            <p id="emptyDataHint" class="empty-hint" style="display:none;">데이터가 비어 있습니다. 문서 폴더의 <strong>두근두근타운_도감\데이터\config.json</strong>에 <strong>data_source</strong>와 <strong>github_repo</strong>(또는 drive_file_id)를 넣은 뒤 <strong>데이터 새로고침</strong>을 눌러주세요.</p>
+            <p id="madeBy" class="title-sub" style="margin-top:2px; font-size:0.7rem; color:var(--text-tertiary);">Made By 을현</p>
+            <p id="emptyDataHint" class="empty-hint" style="display:none;">데이터가 비어 있습니다. 문서 폴더의 <strong>Heartowiki\data\config.json</strong>에 <strong>data_source</strong>와 <strong>github_repo</strong>(또는 drive_file_id)를 넣은 뒤 <strong>데이터 새로고침</strong>을 눌러주세요.</p>
             <p id="dataErrorHint" class="empty-hint" style="display:none; margin-top:8px; color:#c62828; font-size:0.9rem;"></p>
         </div>
     </header>
@@ -86,37 +95,18 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         <div class="filter-row">
             <div class="search-box"><input type="text" id="searchBox" placeholder="🔍 생물 이름 검색"></div>
             <select id="locationFilter"><option value="">📍 지역 전체</option></select>
-            <select id="levelFilter"><option value="">⭐ 레벨 전체</option></select>
+            <select id="levelFilter"><option value="">필요 취미 레벨 전체</option></select>
             <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
-            <select id="sortBy"><option value="level-asc">레벨 낮은 순</option><option value="level-desc">레벨 높은 순</option></select>
         </div>
         <div class="action-row">
             <label><input type="checkbox" id="hideCompleted"> 수집 완료 숨김</label>
-            <label><input type="checkbox" id="showOnlyUserAdded"> 추가한 생물</label>
             <button type="button" id="btnRefresh" class="primary">🔄 데이터 새로고침</button>
             <button type="button" id="btnAppUpdate">📦 업데이트 확인</button>
         </div>
     </div>
+    </div>
     <div id="dataGrid" class="grid">
         <div class="loading" id="loadingState">데이터를 불러오는 중...</div>
-    </div>
-    <button class="fab" id="fabAdd" title="생물 추가">+</button>
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close" id="closeAddModal">×</button>
-            <h2>새 생물 추가</h2>
-            <form id="addForm">
-                <input type="text" id="newName" placeholder="이름 *" required>
-                <select id="newLocation"><option value="">지역 선택</option></select>
-                <input type="text" id="newSubLocation" placeholder="세부지역">
-                <input type="text" id="newLevel" placeholder="레벨">
-                <select id="newWeather"><option value="">날씨 선택</option></select>
-                <input type="text" id="newTime" placeholder="시간">
-                <div class="file-input-wrapper"><div class="file-input-btn" id="fileLabel">📷 이미지 선택</div><input type="file" id="newImage" accept="image/*"></div>
-                <img id="imagePreview" class="image-preview" style="display:none">
-                <button type="submit" class="btn-save">저장</button>
-            </form>
-        </div>
     </div>
     <div id="updateModal" class="modal">
         <div class="modal-content">
@@ -134,7 +124,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 (function() {
     let CREATURES_DATA = { 어류: [], 곤충: [], 조류: [], 요리: [] };
     const CATEGORY_CONFIG = { '어류': { icon: '🐟', order: 1 }, '곤충': { icon: '🦋', order: 2 }, '조류': { icon: '🦅', order: 3 }, '요리': { icon: '🍳', order: 4 } };
-    let _userState = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: { currentTab: '어류', sortBy: 'level-asc' } };
+    let _userState = { stars: {}, priceStars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: { currentTab: '어류', sortBy: 'level-asc' } };
 
     function getApi() {
         if (window.pywebview && window.pywebview.api) return window.pywebview.api;
@@ -152,7 +142,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 
     const CardManager = {
         stars: {},
+        priceStars: {},
         getStars(cat, name) { return this.stars[cat + '_' + name] || 0; },
+        getPriceStars(cat, name) { return this.priceStars[cat + '_' + name] ?? 1; },
         setStars(cat, name, rating) {
             const key = cat + '_' + name;
             const cur = this.stars[key] || 0;
@@ -160,10 +152,16 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             Storage.saveStars(this.stars);
             App.render();
         },
+        setPriceStars(cat, name, rating) {
+            const key = cat + '_' + name;
+            this.priceStars[key] = Math.max(1, Math.min(5, rating));
+            App.render();
+        },
         createListItem(item, cat) {
             const isRecipe = cat === '요리';
             const name = item.명칭 || '';
-            const stars = isRecipe ? 0 : this.getStars(cat, name);
+            const stars = this.getStars(cat, name);
+            const priceStars = this.getPriceStars(cat, name);
             const wrap = document.createElement('div');
             wrap.className = 'list-item' + (stars === 5 ? ' collected' : '');
             wrap.dataset.category = cat;
@@ -171,28 +169,100 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             const nameRow = document.createElement('div');
             nameRow.className = 'list-item-name';
             nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(name) + '</span><span class="chevron">▼</span>';
-            nameRow.onclick = () => {
+            nameRow.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const grid = document.getElementById('dataGrid');
-                grid.querySelectorAll('.list-item.open').forEach(el => { if (el !== wrap) el.classList.remove('open'); });
-                wrap.classList.toggle('open');
+                const wasOpen = wrap.classList.contains('open');
+                const previousOpenEl = grid.querySelector('.list-item.open');
+                const previousOpenName = previousOpenEl ? previousOpenEl.dataset.name : null;
+                if (wasOpen) {
+                    App.openCard = null;
+                    App.ghostCard = null;
+                    const st = Storage.loadSettings();
+                    Storage.saveSettings({ ...st, lastOpenCard: null });
+                    App.render();
+                    return;
+                }
+                grid.querySelectorAll('.list-item.open').forEach(el => { el.classList.remove('open'); });
+                wrap.classList.add('open');
+                App.openCard = { tab: App.currentTab, name: wrap.dataset.name };
+                App.ghostCard = (previousOpenEl && previousOpenEl !== wrap && previousOpenName)
+                    ? { tab: App.currentTab, name: previousOpenName }
+                    : null;
+                const st = Storage.loadSettings();
+                Storage.saveSettings({ ...st, lastOpenCard: App.openCard });
+                App.render();
             };
             wrap.appendChild(nameRow);
             const detail = document.createElement('div');
             detail.className = 'list-item-detail';
-            function addRow(label, value) { if (!value) return; const r = document.createElement('div'); r.className = 'detail-row'; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span><span class="detail-value">' + escapeHtml(value) + '</span>'; detail.appendChild(r); }
+            function addRow(label, value) { if (value === undefined || value === null) return; if (value === '') return; const r = document.createElement('div'); r.className = 'detail-row'; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span><span class="detail-value">' + escapeHtml(value) + '</span>'; detail.appendChild(r); }
+            function addRowPre(label, value) { if (value === undefined || value === null || value === '') return; const r = document.createElement('div'); r.className = 'detail-row'; const v = document.createElement('span'); v.className = 'detail-value'; v.style.whiteSpace = 'pre-line'; v.textContent = value; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span>'; r.appendChild(v); detail.appendChild(r); }
             if (isRecipe) {
-                addRow('재료', item.재료);
+                if (item.레벨 != null && item.레벨 !== '') addRow('필요 취미 레벨', 'Lv.' + (formatInteger(item.레벨) || item.레벨));
+                addRowPre('재료', item.재료);
                 addRow('레시피', item.레시피);
-                addRow('가격', item.가격);
+                const basePrice = parseFloat(item.가격) || 0;
+                const mult = STAR_MULT[priceStars] || 1;
+                const calcPrice = Math.round(basePrice * mult);
+                const priceRow = document.createElement('div');
+                priceRow.className = 'detail-row detail-row-price';
+                const priceVal = document.createElement('span');
+                priceVal.className = 'detail-value';
+                priceVal.style.display = 'flex';
+                priceVal.style.alignItems = 'center';
+                priceVal.style.justifyContent = 'flex-end';
+                priceVal.style.gap = '8px';
+                priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <button type="button" class="star-adj" data-dir="-">−</button> <span class="star-display">★' + priceStars + '</span> <button type="button" class="star-adj" data-dir="+">+</button>';
+                priceRow.innerHTML = '<span class="detail-label">가격</span>';
+                priceRow.appendChild(priceVal);
+                priceRow.querySelector('.star-adj').onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars - 1); };
+                priceRow.querySelectorAll('.star-adj')[1].onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars + 1); };
+                detail.appendChild(priceRow);
                 addRow('비고', item.비고);
+                const starRow = document.createElement('div');
+                starRow.className = 'detail-row';
+                starRow.innerHTML = '<span class="detail-label">⭐ 수집</span>';
+                const starC = document.createElement('div');
+                starC.className = 'star-rating';
+                for (let i = 1; i <= 5; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'star ' + (i <= stars ? 'filled' : '');
+                    s.textContent = '★';
+                    s.onclick = e => { e.stopPropagation(); this.setStars(cat, name, i); };
+                    starC.appendChild(s);
+                }
+                starRow.appendChild(starC);
+                detail.appendChild(starRow);
             } else {
                 addRow('📍 지역', item.지역);
                 addRow('📌 세부지역', item.세부지역);
-                addRow('⭐ 레벨', item.레벨 ? 'Lv.' + item.레벨 : '');
+                addRow('필요 취미 레벨', item.레벨 != null && item.레벨 !== '' ? 'Lv.' + (formatInteger(item.레벨) || item.레벨) : '');
                 addRow('🌤️ 날씨', item.날씨영향);
                 addRow('🕐 시간대', item.시간대);
-                addRow('크기', item.크기);
-                addRow('가격', item.가격);
+                addRow('크기', formatInteger(item.크기) || item.크기 || '');
+                if (cat === '어류') {
+                    const basePrice = parseFloat(item.가격) || 0;
+                    const mult = STAR_MULT[priceStars] || 1;
+                    const calcPrice = Math.round(basePrice * mult);
+                    const priceRow = document.createElement('div');
+                    priceRow.className = 'detail-row detail-row-price';
+                    const priceVal = document.createElement('span');
+                    priceVal.className = 'detail-value';
+                    priceVal.style.display = 'flex';
+                    priceVal.style.alignItems = 'center';
+                    priceVal.style.justifyContent = 'flex-end';
+                    priceVal.style.gap = '8px';
+                    priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <button type="button" class="star-adj" data-dir="-">−</button> <span class="star-display">★' + priceStars + '</span> <button type="button" class="star-adj" data-dir="+">+</button>';
+                    priceRow.innerHTML = '<span class="detail-label">가격</span>';
+                    priceRow.appendChild(priceVal);
+                    const btnMin = priceRow.querySelector('.star-adj');
+                    const btnPlus = priceRow.querySelectorAll('.star-adj')[1];
+                    btnMin.onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars - 1); };
+                    btnPlus.onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars + 1); };
+                    detail.appendChild(priceRow);
+                }
                 addRow('비고', item.비고);
                 const starRow = document.createElement('div');
                 starRow.className = 'detail-row';
@@ -209,13 +279,25 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 starRow.appendChild(starC);
                 detail.appendChild(starRow);
             }
-            if (item.isUserAdded) {
-                const del = document.createElement('button');
-                del.className = 'list-item-delete';
-                del.textContent = '×';
-                del.onclick = e => { e.stopPropagation(); App.deleteCreature(cat, name); };
-                detail.appendChild(del);
-            }
+            wrap.appendChild(detail);
+            return wrap;
+        },
+        createGhost(item, cat) {
+            const name = item.명칭 || '';
+            const wrap = document.createElement('div');
+            wrap.className = 'list-item list-item-ghost';
+            wrap.dataset.category = cat;
+            wrap.dataset.name = name;
+            wrap.setAttribute('role', 'button');
+            wrap.setAttribute('tabindex', '0');
+            const nameRow = document.createElement('div');
+            nameRow.className = 'list-item-name';
+            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(name) + '</span><span class="chevron">▼</span>';
+            nameRow.style.pointerEvents = 'none';
+            wrap.appendChild(nameRow);
+            const detail = document.createElement('div');
+            detail.className = 'list-item-detail';
+            detail.style.pointerEvents = 'none';
             wrap.appendChild(detail);
             return wrap;
         }
@@ -226,6 +308,17 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         div.textContent = s;
         return div.innerHTML;
     }
+    function formatPrice(p) {
+        if (p == null || p === '') return '';
+        const n = parseFloat(p);
+        return isNaN(n) ? '' : String(Math.round(n));
+    }
+    function formatInteger(v) {
+        if (v == null || v === '') return '';
+        const n = parseFloat(v);
+        return isNaN(n) ? '' : String(Math.round(n));
+    }
+    const STAR_MULT = { 1: 1, 2: 1.5, 3: 2, 4: 4, 5: 8 };
 
     const FilterManager = {
         filter(creatures, opt) {
@@ -242,24 +335,34 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                     if (opt.weather === '비' && !w.includes('비')) return false;
                     if (opt.weather === '해' && !w.includes('해')) return false;
                     if (opt.weather === '무지개' && !w.includes('무지개')) return false;
+                    if (opt.weather === '맑은 날' && !w.includes('맑')) return false;
                 }
-                if (opt.hideCompleted && CardManager.getStars(opt.category, c.명칭) >= 5) return false;
             }
-            if (opt.showOnlyUserAdded && !c.isUserAdded) return false;
+                if (opt.hideCompleted && CardManager.getStars(opt.category, c.명칭) >= 5) return false;
                 return true;
             });
+        },
+        levelNum(item) {
+            const v = item.레벨;
+            if (v == null || v === '') return 0;
+            const n = parseFloat(v);
+            if (!isNaN(n)) return n;
+            return 20;
         },
         sort(creatures, sortBy, cat) {
             const sorted = [...creatures];
             if (cat === '요리') {
-                sorted.sort((a, b) => (a.명칭 || '').localeCompare(b.명칭 || ''));
+                sorted.sort((a, b) => {
+                    const pA = parseFloat(a.가격) || 0, pB = parseFloat(b.가격) || 0;
+                    if (pA !== pB) return pA - pB;
+                    return (a.명칭 || '').localeCompare(b.명칭 || '');
+                });
                 return sorted;
             }
             sorted.sort((a, b) => {
-                const sA = CardManager.getStars(cat, a.명칭), sB = CardManager.getStars(cat, b.명칭);
-                if (sA !== sB) return sB - sA;
-                const lA = parseFloat(a.레벨) || 0, lB = parseFloat(b.레벨) || 0;
-                return sortBy === 'level-asc' ? lA - lB : lB - lA;
+                const lA = FilterManager.levelNum(a), lB = FilterManager.levelNum(b);
+                if (lA !== lB) return sortBy === 'level-asc' ? lA - lB : lB - lA;
+                return (a.명칭 || '').localeCompare(b.명칭 || '');
             });
             return sorted;
         },
@@ -287,41 +390,77 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     const App = {
         currentTab: '어류',
         userCreatures: { 어류: [], 곤충: [], 조류: [] },
+        openCard: null,
+        ghostCard: null,
         init() {
             CardManager.stars = Storage.loadStars();
             this.userCreatures = Storage.loadUserCreatures();
             const settings = Storage.loadSettings();
             this.currentTab = settings.currentTab || '어류';
-            document.getElementById('sortBy').value = settings.sortBy || 'level-asc';
+            if (settings.darkMode) {
+                document.body.classList.add('dark');
+                document.getElementById('darkModeToggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('dark');
+                document.getElementById('darkModeToggle').textContent = '🌙';
+            }
             renderTabs();
             this.setupEvents();
             this.updateFilters();
             this.switchTab(this.currentTab);
         },
         setupEvents() {
-            ['searchBox', 'locationFilter', 'levelFilter', 'weatherFilter', 'sortBy', 'hideCompleted', 'showOnlyUserAdded'].forEach(id => {
+            ['searchBox', 'locationFilter', 'levelFilter', 'weatherFilter', 'hideCompleted'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => this.render());
             });
             document.getElementById('btnRefresh').addEventListener('click', () => this.refreshFromDrive());
             document.getElementById('btnAppUpdate').addEventListener('click', checkAppUpdate);
-            document.getElementById('fabAdd').addEventListener('click', openAddModal);
-            document.getElementById('closeAddModal').addEventListener('click', closeAddModal);
-            document.getElementById('addForm').addEventListener('submit', saveNewCreature);
+            document.getElementById('darkModeToggle').addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark');
+                const st = Storage.loadSettings();
+                Storage.saveSettings({ ...st, darkMode: isDark });
+                document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+                document.getElementById('darkModeToggle').title = isDark ? '라이트 모드' : '다크 모드';
+            });
+            function closeOpenCard() {
+                App.openCard = null;
+                App.ghostCard = null;
+                const st = Storage.loadSettings();
+                Storage.saveSettings({ ...st, lastOpenCard: null });
+                App.render();
+            }
+            document.getElementById('dataGrid').addEventListener('mousedown', (e) => {
+                const ghost = e.target.closest('.list-item-ghost');
+                if (ghost) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeOpenCard();
+                }
+            }, true);
+            document.getElementById('dataGrid').addEventListener('click', (e) => {
+                const ghost = e.target.closest('.list-item-ghost');
+                if (ghost) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeOpenCard();
+                }
+            }, true);
         },
         switchTab(cat) {
             this.currentTab = cat;
+            this.openCard = null;
+            this.ghostCard = null;
             renderTabs();
             this.updateFilters();
+            document.getElementById('searchBox').placeholder = cat === '요리' ? '🔍 요리 이름 검색' : '🔍 생물 이름 검색';
             this.render();
-            this.saveSettings();
-            document.getElementById('fabAdd').style.display = cat === '요리' ? 'none' : 'block';
         },
         updateFilters() {
             const cat = this.currentTab;
             const creatures = this.getAll(cat);
             const isRecipe = cat === '요리';
-            ['locationFilter', 'levelFilter', 'weatherFilter', 'sortBy'].forEach(id => {
+            ['locationFilter', 'levelFilter', 'weatherFilter'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = isRecipe ? 'none' : '';
             });
@@ -331,11 +470,18 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             locSel.innerHTML = '<option value="">📍 지역 전체</option>';
             locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
             if (locs.includes(cur)) locSel.value = cur;
-            const levs = FilterManager.getUnique(creatures, '레벨');
+            const levs = FilterManager.getUnique(creatures, '레벨').filter(l => l);
+            levs.sort((a, b) => {
+                const na = parseFloat(a), nb = parseFloat(b);
+                if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                if (!isNaN(na)) return -1;
+                if (!isNaN(nb)) return 1;
+                return String(a).localeCompare(b);
+            });
             const levSel = document.getElementById('levelFilter');
             const curL = levSel.value;
-            levSel.innerHTML = '<option value="">⭐ 레벨 전체</option>';
-            levs.forEach(l => { if (l) { const o = document.createElement('option'); o.value = l; o.textContent = 'Lv.' + l; levSel.appendChild(o); } });
+            levSel.innerHTML = '<option value="">필요 취미 레벨 전체</option>';
+            levs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'Lv.' + (formatInteger(l) || l); levSel.appendChild(o); });
             if (levs.includes(curL)) levSel.value = curL;
             const weathers = new Set();
             creatures.forEach(c => {
@@ -343,6 +489,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                     if (c.날씨영향.includes('비')) weathers.add('비');
                     if (c.날씨영향.includes('해')) weathers.add('해');
                     if (c.날씨영향.includes('무지개')) weathers.add('무지개');
+                    if (c.날씨영향.includes('맑')) weathers.add('맑은 날');
                 }
             });
             const wSel = document.getElementById('weatherFilter');
@@ -350,31 +497,32 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             wSel.innerHTML = '<option value="">🌤️ 날씨 전체</option>';
             Array.from(weathers).sort().forEach(w => { const o = document.createElement('option'); o.value = w; o.textContent = w; wSel.appendChild(o); });
             if (weathers.has(curW)) wSel.value = curW;
-            this.updateModalFilters();
-        },
-        updateModalFilters() {
-            const all = [...(CREATURES_DATA.어류||[]), ...(CREATURES_DATA.곤충||[]), ...(CREATURES_DATA.조류||[]), ...this.userCreatures.어류, ...this.userCreatures.곤충, ...this.userCreatures.조류];
-            const locs = FilterManager.getUnique(all, '지역');
-            const sel = document.getElementById('newLocation');
-            sel.innerHTML = '<option value="">지역 선택</option>';
-            locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; sel.appendChild(o); });
-            const weathers = new Set();
-            all.forEach(c => {
-                if (c.날씨영향) {
-                    if (c.날씨영향.includes('비')) weathers.add('비');
-                    if (c.날씨영향.includes('해')) weathers.add('해');
-                    if (c.날씨영향.includes('무지개')) weathers.add('무지개');
-                }
-            });
-            const wSel = document.getElementById('newWeather');
-            wSel.innerHTML = '<option value="">날씨 선택</option>';
-            Array.from(weathers).sort().forEach(w => { const o = document.createElement('option'); o.value = w; o.textContent = w; wSel.appendChild(o); });
         },
         getAll(cat) {
             return [...(CREATURES_DATA[cat] || []), ...(this.userCreatures[cat] || [])];
         },
         render() {
             const grid = document.getElementById('dataGrid');
+            let openCard = null;
+            let scrollPos = 0;
+            if (this.openCard && this.openCard.tab === this.currentTab) {
+                openCard = this.openCard;
+                scrollPos = window.scrollY || document.documentElement.scrollTop || 0;
+            }
+            if (!openCard) {
+                const openEl = grid.querySelector('.list-item.open');
+                if (openEl && openEl.dataset.category && openEl.dataset.name) {
+                    openCard = { tab: this.currentTab, name: openEl.dataset.name };
+                    scrollPos = window.scrollY || document.documentElement.scrollTop || 0;
+                }
+            }
+            if (!openCard) {
+                const st = Storage.loadSettings();
+                if (st.lastOpenCard && st.lastOpenCard.tab === this.currentTab) {
+                    openCard = st.lastOpenCard;
+                    scrollPos = st.scrollPosition || 0;
+                }
+            }
             grid.innerHTML = '';
             grid.classList.remove('loading');
             const opt = {
@@ -383,21 +531,36 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 location: document.getElementById('locationFilter').value,
                 level: document.getElementById('levelFilter').value,
                 weather: document.getElementById('weatherFilter').value,
-                hideCompleted: document.getElementById('hideCompleted').checked,
-                showOnlyUserAdded: document.getElementById('showOnlyUserAdded').checked
+                hideCompleted: document.getElementById('hideCompleted').checked
             };
             let creatures = this.getAll(this.currentTab);
             creatures = FilterManager.filter(creatures, opt);
-            creatures = FilterManager.sort(creatures, document.getElementById('sortBy').value, this.currentTab);
+            if (this.currentTab === '요리') {
+                creatures = FilterManager.sort(creatures, 'price-asc', '요리');
+            }
             if (creatures.length === 0) {
                 const e = document.createElement('div');
                 e.className = 'empty-state';
                 e.innerHTML = '<div class="empty-state-icon">🔍</div><div class="empty-state-text">검색 결과가 없습니다</div>';
                 grid.appendChild(e);
             } else {
-                creatures.forEach(c => grid.appendChild(CardManager.createListItem(c, this.currentTab)));
+                const ghostFor = this.ghostCard && this.ghostCard.tab === this.currentTab ? this.ghostCard : null;
+                creatures.forEach(c => {
+                    if (ghostFor && ghostFor.name === c.명칭) {
+                        grid.appendChild(CardManager.createGhost(c, this.currentTab));
+                    }
+                    const el = CardManager.createListItem(c, this.currentTab);
+                    if (openCard && openCard.name === c.명칭) {
+                        el.classList.add('open');
+                    }
+                    grid.appendChild(el);
+                });
+            }
+            if (openCard) {
+                requestAnimationFrame(() => { window.scrollTo(0, scrollPos); });
             }
             this.updateCounts();
+            this.saveSettings(openCard, scrollPos);
         },
         updateCounts() {
             Object.keys(CATEGORY_CONFIG).forEach(c => {
@@ -419,12 +582,17 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             this.userCreatures[cat].splice(idx, 1);
             Storage.saveUserCreatures(this.userCreatures);
             delete CardManager.stars[cat + '_' + name];
+            delete CardManager.priceStars[cat + '_' + name];
             Storage.saveStars(CardManager.stars);
             this.updateFilters();
             this.render();
         },
-        saveSettings() {
-            Storage.saveSettings({ currentTab: this.currentTab, sortBy: document.getElementById('sortBy').value });
+        saveSettings(openCard, scrollPosition) {
+            const prev = Storage.loadSettings();
+            const s = { ...prev, currentTab: this.currentTab };
+            s.lastOpenCard = (openCard != null) ? openCard : (prev.lastOpenCard || null);
+            s.scrollPosition = (scrollPosition != null) ? scrollPosition : (prev.scrollPosition != null ? prev.scrollPosition : 0);
+            Storage.saveSettings(s);
         },
         async refreshFromDrive() {
             const api = getApi();
@@ -535,46 +703,6 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             modal.classList.add('show');
         }).catch(function() { alert('업데이트 확인에 실패했습니다.'); });
     }
-    function openAddModal() {
-        document.getElementById('addModal').classList.add('show');
-        document.getElementById('addForm').reset();
-        document.getElementById('imagePreview').style.display = 'none';
-        document.getElementById('fileLabel').textContent = '📷 이미지 선택';
-        App.updateModalFilters();
-    }
-    function closeAddModal() {
-        document.getElementById('addModal').classList.remove('show');
-    }
-    function saveNewCreature(e) {
-        e.preventDefault();
-        const name = document.getElementById('newName').value.trim();
-        if (!name) return;
-        const imgPrev = document.getElementById('imagePreview');
-        App.addCreature({
-            명칭: name,
-            지역: document.getElementById('newLocation').value || '',
-            세부지역: document.getElementById('newSubLocation').value.trim(),
-            레벨: document.getElementById('newLevel').value.trim(),
-            날씨영향: document.getElementById('newWeather').value || '',
-            시간영향: document.getElementById('newTime').value.trim(),
-            이미지: imgPrev.style.display === 'block' ? imgPrev.src : '',
-            isUserAdded: true
-        });
-        closeAddModal();
-    }
-    document.getElementById('newImage').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                document.getElementById('imagePreview').src = ev.target.result;
-                document.getElementById('imagePreview').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-            document.getElementById('fileLabel').textContent = file.name;
-        }
-    });
-
     function bootstrap(data) {
         CREATURES_DATA = data.base || CREATURES_DATA;
         _userState = data.user || _userState;

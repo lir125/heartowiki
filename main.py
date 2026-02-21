@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 두근두근타운 도감 - 데스크톱 앱
-실행 시 C:\\Users\\<사용자>\\Documents\\두근두근타운_도감\\데이터 폴더를 사용하며,
-도감 데이터·수집정보·설정(색상 등)을 모두 해당 폴더에 JSON으로 저장합니다.
+실행 시 C:\\Users\\<사용자>\\Documents\\Heartowiki\\data 폴더를 사용하며,
+도감 데이터·수집 정보·설정(색상 등)을 모두 해당 폴더에 JSON으로 저장합니다.
 데이터·앱 업데이트는 구글 드라이브 또는 GitHub Releases로 가능합니다.
 """
 
@@ -24,32 +24,35 @@ except ImportError:
     load_workbook = None
 
 # 앱 버전 (앱 업데이트 확인 시 비교용)
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 # 리소스 경로 (exe 빌드 시)
 def get_resource_dir():
     return Path(getattr(sys, "_MEIPASS", Path(__file__).parent.resolve()))
 
-# 앱 데이터 폴더: C:\Users\<사용자>\Documents\두근두근타운_도감\데이터
+# 앱 데이터 폴더: C:\Users\<사용자>\Documents\Heartowiki\data
 def get_data_dir() -> Path:
-    data_dir = Path.home() / "Documents" / "두근두근타운_도감" / "데이터"
+    data_dir = Path.home() / "Documents" / "Heartowiki" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    # 최초 실행 시 config.json 없으면 기본 파일 생성
+    # 최초 실행 시 config.json 없으면 기본 파일 생성 (GitHub에서 자동으로 도감 데이터 가져옴)
     config_file = data_dir / "config.json"
     if not config_file.exists():
-        config_file.write_text(
-            '{"drive_file_id": "", "update_source": "google_drive", "update_info_file_id": "", "github_repo": ""}',
-            encoding="utf-8",
-        )
+        default_config = {
+            "github_repo": "lir125/heartowiki",
+            "github_data_branch": "main",
+            "update_source": "github",
+            "update_info_file_id": "",
+        }
+        config_file.write_text(json.dumps(default_config, ensure_ascii=False, indent=2), encoding="utf-8")
     return data_dir
 
 RESOURCE_DIR = get_resource_dir()
 DATA_DIR = get_data_dir()
 
 CONFIG_PATH = DATA_DIR / "config.json"
-수집정보_PATH = DATA_DIR / "수집정보.json"
-설정_PATH = DATA_DIR / "설정.json"
-도감캐시_PATH = DATA_DIR / "도감캐시.json"
+COLLECTION_PATH = DATA_DIR / "collection.json"
+SETTINGS_PATH = DATA_DIR / "settings.json"
+CACHE_PATH = DATA_DIR / "cache.json"
 
 _cached_base = None
 _cached_user = None
@@ -59,11 +62,8 @@ _last_data_error = ""  # 데이터 로드 실패 시 사용자에게 표시할 �
 def load_config() -> dict:
     """데이터 폴더의 config.json 로드."""
     default = {
-        "data_source": "github",
-        "github_repo": "",
+        "github_repo": "lir125/heartowiki",
         "github_data_branch": "main",
-        "github_data_path": "creatures_data.json",
-        "drive_file_id": "",
         "update_source": "github",
         "update_info_file_id": "",
     }
@@ -72,41 +72,46 @@ def load_config() -> dict:
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return {**default, **data}
+            config = {**default, **data}
+        if not (config.get("github_repo") or "").strip():
+            config["github_repo"] = default["github_repo"]
+        return config
     except Exception:
         return default
 
 
-def _fetch_data_from_github(repo: str, branch: str = "main", path: str = "creatures_data.json") -> dict:
-    """GitHub 저장소의 도감 데이터 JSON 로드. JSON에 data_version, 어류, 곤충, 조류, 요리 포함."""
+def _fetch_data_from_github(repo: str, branch: str = "main", path: str = "heartowiki.xlsx") -> dict:
+    """GitHub 저장소에서 heartowiki.xlsx 다운로드 후 엑셀 파싱 → 도감 JSON 구조로 반환."""
     if not repo or "/" not in repo:
         raise ValueError("config.json에 github_repo(예: owner/repo)를 넣어 주세요.")
     repo = repo.strip()
     branch = (branch or "main").strip()
-    path = (path or "creatures_data.json").strip().lstrip("/")
+    path = (path or "heartowiki.xlsx").strip().lstrip("/")
     url = f"https://raw.githubusercontent.com/{repo}/{branch}/{path}"
-    r = requests.get(url, timeout=20)
+    headers = {"User-Agent": "Heartowiki/1.0"}
+    r = requests.get(url, timeout=30, headers=headers)
+    if r.status_code == 404:
+        raise ValueError(
+            f"GitHub에서 파일을 찾을 수 없습니다: {path}\n"
+            f"저장소 {repo}의 {branch} 브랜치에 해당 파일이 있는지 확인해 주세요."
+        )
     r.raise_for_status()
-    data = r.json()
-    if not isinstance(data, dict):
-        raise ValueError("GitHub 데이터가 올바른 JSON 형식이 아닙니다.")
-    result = {
-        "어류": data.get("어류", []),
-        "곤충": data.get("곤충", []),
-        "조류": data.get("조류", []),
-        "요리": data.get("요리", []),
-    }
-    if data.get("data_version") is not None:
-        result["data_version"] = str(data["data_version"]).strip()
+
+    # heartowiki.xlsx 다운로드 → 엑셀 파싱 → 도감 JSON 구조로 반환
+    result = _xlsx_to_creatures_data(r.content)
+    if "data_version" not in result:
+        result["data_version"] = "1.0.1"
     return result
 
 
 def _get_github_data_version(repo: str, branch: str = "main", path: str = "creatures_data.json") -> str:
-    """GitHub에 올라온 도감 데이터의 data_version 값만 조회 (업데이트 여부 확인용)."""
+    """GitHub에 올라온 도감 데이터의 data_version 값만 조회 (업데이트 여부 확인용). xlsx는 버전 비교 생략."""
     if not repo or "/" not in repo:
         return ""
     branch = (branch or "main").strip()
     path = (path or "creatures_data.json").strip().lstrip("/")
+    if path.lower().endswith(".xlsx"):
+        return ""  # xlsx는 버전 필드 없음, 업데이트 알림 생략
     url = f"https://raw.githubusercontent.com/{repo}/{branch}/{path}"
     try:
         r = requests.get(url, timeout=15)
@@ -312,14 +317,30 @@ def _val(row: tuple, idx: int) -> str:
 
 
 def _xlsx_to_creatures_data(raw: bytes) -> dict:
-    """엑셀 바이트를 도감 형식 { 어류, 곤충, 조류, 요리 } 로 변환.
-    실제 시트 컬럼에 맞춤: 어류 관찰(이름,레벨,위치,크기,가격,시간대,날씨,비고),
-    새/곤충(이름,레벨,위치,세부위치,시간대,날씨), 미식 라이프(이름,재료,레시피,가격,비고).
+    """엑셀 바이트를 도감 형식 { 어류, 곤충, 조류, 요리 [, data_version ] } 로 변환.
+    시트: 도감 정보(도감 버전, 마지막 업데이트), 어류 관찰(이름,레벨,위치,크기,가격,시간대,날씨,비고),
+    새/곤충(이름,레벨,위치,세부위치,시간대,날씨), 미식 라이프(이름,레벨,재료,레시피,가격,비고).
     """
     if load_workbook is None:
         raise ValueError("엑셀 파일을 읽으려면 openpyxl 패키지가 필요합니다.")
     wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
     result = {"어류": [], "곤충": [], "조류": [], "요리": []}
+
+    # 도감 정보: 도감 버전, 마지막 업데이트 (있으면 data_version 설정)
+    if "도감 정보" in wb.sheetnames:
+        ws_info = wb["도감 정보"]
+        rows_info = list(ws_info.iter_rows(values_only=True))
+        if rows_info:
+            first_info = [str(c).strip() if c is not None else "" for c in rows_info[0]]
+            i_ver = -1
+            for i, c in enumerate(first_info):
+                if (c or "").strip() == "도감 버전":
+                    i_ver = i
+                    break
+            if i_ver >= 0 and len(rows_info) > 1:
+                ver_val = rows_info[1][i_ver] if i_ver < len(rows_info[1]) else None
+                if ver_val is not None and str(ver_val).strip():
+                    result["data_version"] = str(ver_val).strip()
 
     def col_index(first_row: list, name: str) -> int:
         for i, c in enumerate(first_row):
@@ -327,7 +348,14 @@ def _xlsx_to_creatures_data(raw: bytes) -> dict:
                 return i
         return -1
 
-    # 어류 관찰: 이름, 레벨, 위치, 크기, 가격, 시간대, 날씨, 비고
+    def col_index_any(first_row: list, names: list) -> int:
+        for n in names:
+            i = col_index(first_row, n)
+            if i >= 0:
+                return i
+        return -1
+
+    # 어류 관찰: 이름/명칭, 레벨, 위치/지역, 크기, 가격, 시간대, 날씨, 비고
     for sheet_candidate in ("어류 관찰", "어류"):
         if sheet_candidate not in wb.sheetnames:
             continue
@@ -336,11 +364,11 @@ def _xlsx_to_creatures_data(raw: bytes) -> dict:
         if not rows:
             break
         first = [str(c).strip() if c is not None else "" for c in rows[0]]
-        i_name = col_index(first, "이름")
+        i_name = col_index_any(first, ["이름", "명칭"])
         if i_name < 0:
             break
         i_level = col_index(first, "레벨")
-        i_loc = col_index(first, "위치")
+        i_loc = col_index_any(first, ["위치", "지역"])
         i_size = col_index(first, "크기")
         i_price = col_index(first, "가격")
         i_time = col_index(first, "시간대")
@@ -383,14 +411,15 @@ def _xlsx_to_creatures_data(raw: bytes) -> dict:
         if not rows:
             continue
         first = [str(c).strip() if c is not None else "" for c in rows[0]]
-        i_name = col_index(first, "이름")
+        i_name = col_index_any(first, ["이름", "명칭"])
         if i_name < 0:
             continue
         i_level = col_index(first, "레벨")
-        i_loc = col_index(first, "위치")
+        i_loc = col_index_any(first, ["위치", "지역"])
         i_sub = col_index(first, "세부위치")
         i_time = col_index(first, "시간대")
-        i_weather = col_index(first, "날씨")
+        i_weather = col_index_any(first, ["날씨", "날씨영향"])
+        i_img = col_index(first, "이미지")
         for row in rows[1:]:
             name = _val(row, i_name)
             if not name:
@@ -401,18 +430,19 @@ def _xlsx_to_creatures_data(raw: bytes) -> dict:
                 "세부지역": _val(row, i_sub),
                 "레벨": _val(row, i_level),
                 "날씨영향": _val(row, i_weather),
-                "이미지": "",
+                "이미지": _val(row, i_img) if i_img >= 0 else "",
                 "시간대": _val(row, i_time),
                 "비고": "",
             })
 
-    # 미식 라이프: 이름, 재료, 레시피, 가격, 비고
+    # 미식 라이프: 이름, 레벨, 재료, 레시피, 가격, 비고
     if "미식 라이프" in wb.sheetnames:
         ws = wb["미식 라이프"]
         rows = list(ws.iter_rows(values_only=True))
         if rows:
             first = [str(c).strip() if c is not None else "" for c in rows[0]]
             i_name = col_index(first, "이름")
+            i_level = col_index(first, "레벨")
             i_ing = col_index(first, "재료")
             i_recipe = col_index(first, "레시피")
             i_price = col_index(first, "가격")
@@ -424,6 +454,7 @@ def _xlsx_to_creatures_data(raw: bytes) -> dict:
                         continue
                     result["요리"].append({
                         "명칭": name,
+                        "레벨": _val(row, i_level) if i_level >= 0 else "",
                         "재료": _val(row, i_ing),
                         "레시피": _val(row, i_recipe),
                         "가격": _val(row, i_price),
@@ -493,7 +524,7 @@ def _fetch_opensheet(spreadsheet_id: str) -> dict:
         except Exception:
             pass
 
-    # 시트 5 = 미식 라이프 (이름, 재료, 레시피, 가격, 비고)
+    # 시트 5 = 미식 라이프 (이름, 레벨, 재료, 레시피, 가격, 비고)
     try:
         r = requests.get(f"{base}/{spreadsheet_id}/5", timeout=15)
         r.raise_for_status()
@@ -504,6 +535,7 @@ def _fetch_opensheet(spreadsheet_id: str) -> dict:
                 continue
             result["요리"].append({
                 "명칭": name,
+                "레벨": row_get(row, "레벨"),
                 "재료": row_get(row, "재료"),
                 "레시피": row_get(row, "레시피"),
                 "가격": row_get(row, "가격"),
@@ -591,50 +623,50 @@ def download_from_google_drive(file_id: str) -> dict:
     )
 
 
-def load_수집정보() -> dict:
-    """수집정보.json 로드 (별 갯수 = 몇 성까지 잡았는지, 사용자 추가 생물)."""
+def load_collection() -> dict:
+    """collection.json 로드 (수집 별, 사용자 추가 생물). 가격 별은 저장하지 않음."""
     default = {"stars": {}, "userCreatures": {"어류": [], "곤충": [], "조류": [], "요리": []}}
-    if not 수집정보_PATH.exists():
+    if not COLLECTION_PATH.exists():
         return default
     try:
-        with open(수집정보_PATH, "r", encoding="utf-8") as f:
+        with open(COLLECTION_PATH, "r", encoding="utf-8") as f:
             return {**default, **json.load(f)}
     except Exception:
         return default
 
 
-def save_수집정보(data: dict) -> None:
-    """수집정보.json 저장."""
-    with open(수집정보_PATH, "w", encoding="utf-8") as f:
+def save_collection(data: dict) -> None:
+    """collection.json 저장."""
+    with open(COLLECTION_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def load_설정() -> dict:
-    """설정.json 로드 (탭, 정렬, 색상 등)."""
+def load_settings_file() -> dict:
+    """settings.json 로드 (탭, 정렬, 색상 등)."""
     default = {"currentTab": "어류", "sortBy": "level-asc", "colors": {}}
-    if not 설정_PATH.exists():
+    if not SETTINGS_PATH.exists():
         return default
     try:
-        with open(설정_PATH, "r", encoding="utf-8") as f:
+        with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
             return {**default, **json.load(f)}
     except Exception:
         return default
 
 
-def save_설정(data: dict) -> None:
-    """설정.json 저장."""
-    with open(설정_PATH, "w", encoding="utf-8") as f:
+def save_settings_file(data: dict) -> None:
+    """settings.json 저장."""
+    with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def load_user_data() -> dict:
-    """수집정보 + 설정 합쳐서 반환 (UI용)."""
-    수집 = load_수집정보()
-    설정 = load_설정()
+    """collection + settings 합쳐서 반환 (UI용)."""
+    collection = load_collection()
+    settings = load_settings_file()
     return {
-        "stars": 수집.get("stars", {}),
-        "userCreatures": 수집.get("userCreatures", {"어류": [], "곤충": [], "조류": [], "요리": []}),
-        "settings": 설정,
+        "stars": collection.get("stars", {}),
+        "userCreatures": collection.get("userCreatures", {"어류": [], "곤충": [], "조류": [], "요리": []}),
+        "settings": settings,
     }
 
 
@@ -648,23 +680,19 @@ def get_base_data() -> dict:
     _last_data_error = ""
 
     try:
-        use_github = config.get("data_source") == "github" and config.get("github_repo", "").strip()
-        if use_github:
-            repo = config.get("github_repo", "").strip()
-            branch = config.get("github_data_branch") or "main"
-            path = config.get("github_data_path") or "creatures_data.json"
-            _cached_base = _fetch_data_from_github(repo, branch, path)
-        else:
-            file_id = config.get("drive_file_id", "").strip()
-            _cached_base = download_from_google_drive(file_id)
-        # 성공 시 데이터 폴더에 도감 캐시 저장 (data_version 포함)
-        with open(도감캐시_PATH, "w", encoding="utf-8") as f:
+        # 데이터는 GitHub의 heartowiki.xlsx만 사용 (다운로드 → xlsx 파싱 → JSON 구조로 캐시)
+        repo = (config.get("github_repo") or "lir125/heartowiki").strip()
+        branch = (config.get("github_data_branch") or "main").strip()
+        path = "heartowiki.xlsx"  # 항상 저장소 루트의 heartowiki.xlsx
+        _cached_base = _fetch_data_from_github(repo, branch, path)
+        # 성공 시 데이터 폴더에 JSON으로 캐시 저장 (cache.json)
+        with open(CACHE_PATH, "w", encoding="utf-8") as f:
             json.dump(_cached_base, f, ensure_ascii=False, indent=2)
     except Exception as e:
         _last_data_error = str(e) or "알 수 없는 오류"
-        if 도감캐시_PATH.exists():
+        if CACHE_PATH.exists():
             try:
-                with open(도감캐시_PATH, "r", encoding="utf-8") as f:
+                with open(CACHE_PATH, "r", encoding="utf-8") as f:
                     _cached_base = json.load(f)
             except Exception:
                 _cached_base = {"어류": [], "곤충": [], "조류": [], "요리": []}
@@ -690,19 +718,19 @@ def get_app_data() -> dict:
 
 
 def save_user_data_from_app(stars=None, user_creatures=None, settings=None) -> None:
-    """UI에서 호출: 수집정보·설정을 데이터 폴더 JSON으로 저장."""
+    """UI에서 호출: 수집정보·설정을 데이터 폴더 JSON으로 저장. 가격 별은 저장하지 않음."""
     global _cached_user
 
     if stars is not None or user_creatures is not None:
-        수집 = load_수집정보()
+        collection = load_collection()
         if stars is not None:
-            수집["stars"] = stars
+            collection["stars"] = stars
         if user_creatures is not None:
-            수집["userCreatures"] = user_creatures
-        save_수집정보(수집)
+            collection["userCreatures"] = user_creatures
+        save_collection(collection)
 
     if settings is not None:
-        save_설정(settings)
+        save_settings_file(settings)
 
     _cached_user = load_user_data()
 
@@ -716,20 +744,18 @@ def refresh_data() -> dict:
 
 
 def check_data_update() -> dict:
-    """GitHub 도감 데이터의 최신 data_version과 현재 캐시 비교. data_source가 github일 때만 의미 있음."""
+    """GitHub heartowiki.xlsx 기준 도감 데이터 업데이트 여부 확인 (xlsx는 버전 필드 없어 비움)."""
     config = load_config()
-    if config.get("data_source") != "github":
-        return {"hasUpdate": False, "currentVersion": "", "latestVersion": ""}
     repo = config.get("github_repo", "").strip()
     if not repo:
         return {"hasUpdate": False, "currentVersion": "", "latestVersion": ""}
     branch = config.get("github_data_branch") or "main"
-    path = config.get("github_data_path") or "creatures_data.json"
+    path = "heartowiki.xlsx"
     latest = _get_github_data_version(repo, branch, path)
     current = ""
-    if 도감캐시_PATH.exists():
+    if CACHE_PATH.exists():
         try:
-            with open(도감캐시_PATH, "r", encoding="utf-8") as f:
+            with open(CACHE_PATH, "r", encoding="utf-8") as f:
                 cached = json.load(f)
                 current = str(cached.get("data_version", "")).strip()
         except Exception:
@@ -777,7 +803,7 @@ def main():
     get_base_data()
 
     window = webview.create_window(
-        "두근두근타운 도감",
+        "두타위키",
         f"file:///{index_path.as_posix()}",
         width=1200,
         height=800,

@@ -47,7 +47,7 @@ def main():
     html = ORIGINAL_HTML.read_text(encoding="utf-8")
     data = extract_creatures_data(html)
     if "data_version" not in data:
-        data = {"data_version": "1.0.0", **data}
+        data = {"data_version": "1.0.1", **data}
     OUTPUT_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     counts = {k: len(v) for k, v in data.items() if isinstance(v, list)}
     print(f"저장 완료: {OUTPUT_JSON}")
