@@ -12,7 +12,6 @@ import os
 import stat
 import subprocess
 import sys
-import threading
 import time
 import webbrowser
 from pathlib import Path
@@ -326,14 +325,19 @@ def apply_update(download_url: str = "", drive_file_id: str = "") -> dict:
     if not ok or not new_path.exists():
         return {"success": False, "error": "다운로드에 실패했습니다."}
 
-    # 배치: 앱이 완전히 종료될 때까지 대기 후 복사·재시작 (실행 중인 exe는 잠금되므로 먼저 종료 필요)
+    # 배치: 프로세스 종료 → 잠금 해제 대기 → 복사 → 재시작 (너무 빨리 하면 복사 실패·원본 덮어쓰기 오류)
+    pid = os.getpid()
     exe_path_str = str(exe_path)
     new_path_str = str(new_path)
     batch_content = f'''@echo off
 chcp 65001 >nul
+timeout /t 3 /nobreak >nul
+taskkill /PID {pid} /F >nul 2>&1
 timeout /t 5 /nobreak >nul
 copy /Y "{new_path_str}" "{exe_path_str}"
+timeout /t 2 /nobreak >nul
 start "" "{exe_path_str}"
+timeout /t 2 /nobreak >nul
 del "{new_path_str}"
 (del "%~f0" 2>nul)
 exit
@@ -348,12 +352,6 @@ exit
         creationflags=CREATE_NO_WINDOW,
         shell=False,
     )
-
-    def _exit_after_delay():
-        time.sleep(3)
-        sys.exit(0)
-
-    threading.Thread(target=_exit_after_delay, daemon=True).start()
     return {"success": True, "error": ""}
 
 

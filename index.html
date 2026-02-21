@@ -627,7 +627,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         el.textContent = appVersion ? 'v' + appVersion : '';
     }
 
-    function checkAppUpdate() {
+    function checkAppUpdate(silentIfLatest) {
         var api = getApi();
         if (!api) return;
         Promise.all([ api.check_app_update(), api.check_data_update ? api.check_data_update() : Promise.resolve({ hasUpdate: false, latestVersion: '' }) ]).then(function(arr) {
@@ -648,6 +648,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             }
 
             if (!appResult.hasUpdate) {
+                if (silentIfLatest && !dataResult.hasUpdate) return;
                 if (dataResult.hasUpdate) {
                     updateMessage.textContent = '앱은 최신 버전입니다. 도감 데이터만 새로 받을 수 있습니다.';
                     updateHint.style.display = 'none';
@@ -714,6 +715,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         }
         setVersionInfo(data.appVersion, data.dataVersion);
         App.init();
+        setTimeout(function() { checkAppUpdate(true); }, 1500);
     }
 
     window.addEventListener('pywebviewready', function() {
