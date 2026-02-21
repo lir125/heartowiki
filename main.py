@@ -24,7 +24,7 @@ except ImportError:
     load_workbook = None
 
 # 앱 버전 (앱 업데이트 확인 시 비교용)
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 
 # 리소스 경로 (exe 빌드 시)
 def get_resource_dir():
@@ -42,6 +42,7 @@ def get_data_dir() -> Path:
             "github_data_branch": "main",
             "update_source": "github",
             "update_info_file_id": "",
+            "github_update_path": "",
         }
         config_file.write_text(json.dumps(default_config, ensure_ascii=False, indent=2), encoding="utf-8")
     return data_dir
@@ -66,6 +67,7 @@ def load_config() -> dict:
         "github_data_branch": "main",
         "update_source": "github",
         "update_info_file_id": "",
+        "github_update_path": "",
     }
     if not CONFIG_PATH.exists():
         return default
@@ -131,8 +133,47 @@ def _version_tuple(v: str):
         return (0,)
 
 
-def _check_update_github(repo: str) -> dict:
-    """GitHub Releases 최신 버전 확인. repo = 'owner/repo'."""
+def _check_update_github_file(repo: str, branch: str, path: str) -> dict:
+    """GitHub 저장소의 버전 파일(JSON)에서 버전 확인. path 예: app_version.json."""
+    if not repo or "/" not in repo:
+        return {"hasUpdate": False}
+    branch = (branch or "main").strip()
+    path = (path or "app_version.json").strip().lstrip("/")
+    url = f"https://raw.githubusercontent.com/{repo.strip()}/{branch}/{path}"
+    try:
+        r = requests.get(url, timeout=15, headers={"User-Agent": "Heartowiki/1.0"})
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        return {"hasUpdate": False}
+
+    remote_version = (data.get("version") or "").strip().lstrip("v")
+    if not remote_version:
+        return {"hasUpdate": False}
+    if _version_tuple(remote_version) <= _version_tuple(APP_VERSION):
+        return {"hasUpdate": False}
+
+    download_url = (data.get("download_url") or "").strip()
+    if not download_url:
+        return {"hasUpdate": False}
+
+    message = (data.get("message") or "").strip() or "새 버전이 있습니다."
+    return {
+        "hasUpdate": True,
+        "version": remote_version,
+        "message": message,
+        "download_url": download_url,
+        "exe_file_id": "",
+    }
+
+
+def _check_update_github(repo: str, config: dict) -> dict:
+    """GitHub 업데이트 확인. github_update_path가 있으면 파일에서, 없으면 Releases에서 확인."""
+    path = (config.get("github_update_path") or "").strip()
+    if path:
+        branch = (config.get("github_data_branch") or "main").strip()
+        return _check_update_github_file(repo, branch, path)
+
     if not repo or "/" not in repo:
         return {"hasUpdate": False}
     try:
@@ -209,7 +250,7 @@ def check_app_update() -> dict:
     source = (config.get("update_source") or "google_drive").strip().lower()
     if source == "github":
         repo = (config.get("github_repo") or "").strip()
-        return _check_update_github(repo)
+        return _check_update_github(repo, config)
     file_id = (config.get("update_info_file_id") or "").strip()
     return _check_update_google_drive(file_id)
 

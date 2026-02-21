@@ -1,34 +1,45 @@
 @echo off
+chcp 437 >nul
 echo Building EXE...
 echo.
 
-if not exist "venv" (
-    echo Creating venv with Python 3.12...
-    py -3.12 -m venv venv 2>nul
-    if errorlevel 1 (
-        echo ERROR: Python 3.12 not found. Install from https://www.python.org/downloads/
-        echo Then delete venv folder and run this again.
-        exit /b 1
-    )
+if exist venv\Scripts\activate.bat goto activate
+echo Creating venv...
+py -3.12 -m venv venv
+if errorlevel 1 python -m venv venv
+if not exist venv\Scripts\activate.bat (
+    echo ERROR: Python not found.
+    pause
+    exit /b 1
 )
 
+:activate
 call venv\Scripts\activate.bat
 
 echo Installing packages...
 pip install -r requirements.txt -q
 if errorlevel 1 (
-    echo Install failed. Use Python 3.12 and delete venv then retry.
+    echo Install failed.
+    pause
     exit /b 1
 )
 
 echo.
-echo Running PyInstaller (onedir)...
-pyinstaller --noconfirm --onedir --windowed --name Heartowiki --icon icon.png --add-data "index.html;." main.py
+echo Creating icon.ico from icon.png...
+python png_to_ico.py
+if exist icon.ico (
+    echo Using icon.ico
+    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.ico --add-data "index.html;." main.py
+) else (
+    echo Warning: icon.ico not created, using icon.png
+    pyinstaller --noconfirm --onefile --windowed --name Heartowiki --icon icon.png --add-data "index.html;." main.py
+)
 
-if exist "dist\Heartowiki\Heartowiki.exe" (
+if exist dist\Heartowiki.exe (
     echo.
-    echo Done: dist\Heartowiki\Heartowiki.exe
+    echo Done. See dist\Heartowiki.exe
 ) else (
     echo Build failed.
     exit /b 1
 )
+pause

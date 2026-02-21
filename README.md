@@ -144,6 +144,10 @@ pyinstaller --noconfirm --onedir --windowed --name "Heartowiki" --icon icon.png 
 - `update_source`가 `"github"`이면 **최신 Release**의 태그 버전과 exe 첨부 파일을 사용합니다.
 - **버전**: `main.py`의 `APP_VERSION`을 올리고 exe를 빌드한 뒤, GitHub에 새 Release(태그 예: v1.0.2)와 exe를 올리면 됩니다.
 
+**파일에 버전 적기 (Release 없이)**  
+`config.json`에 `"github_update_path": "app_version.json"` 를 넣으면, 저장소의 해당 파일에서 버전을 읽습니다.  
+저장소 루트에 `app_version.json` (형식은 `app_version.example.json` 참고)을 두고, `version`, `message`, `download_url`(exe 직접 링크)만 수정해 두면 Release를 만들지 않고도 업데이트 안내가 됩니다. exe는 Release 첨부 파일 링크나 다른 URL을 넣으면 됩니다.
+
 ### B. 구글 드라이브 사용
 
 1. **app_update.json** 준비 (형식은 `app_update.example.json` 참고):
@@ -170,7 +174,7 @@ pyinstaller --noconfirm --onedir --windowed --name "Heartowiki" --icon icon.png 
 | `main.py` | 데이터 폴더 생성, 구글 드라이브 다운로드, collection/settings/cache JSON 저장, pywebview 창 |
 | `index.html` | 도감 UI (탭, 검색, 필터, 카드, 수집 성수, 생물 추가). 데이터는 Python API로 주입 |
 | **데이터 폴더** `문서\Heartowiki\data` | |
-| `config.json` | `data_source`(github/google_drive), `github_repo`, `github_data_branch`, `github_data_path`, `drive_file_id`, `update_source`, `update_info_file_id` (`config.example.json` 참고) |
+| `config.json` | `data_source`, `github_repo`, `github_data_branch`, `github_data_path`, `drive_file_id`, `update_source`, `update_info_file_id`, `github_update_path` (`config.example.json` 참고) |
 | `collection.json` | 개인 수집 정보: 별 갯수(몇 성까지 잡았는지), 사용자 추가 생물 |
 | `settings.json` | 현재 탭, 정렬, 색상 등 |
 | `cache.json` | 도감 데이터 캐시 (드라이브 연동 실패 시 사용) |

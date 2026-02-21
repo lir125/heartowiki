@@ -2,5 +2,6 @@
   "github_repo": "lir125/heartowiki",
   "github_data_branch": "main",
   "update_source": "github",
-  "update_info_file_id": ""
+  "update_info_file_id": "",
+  "github_update_path": "app_version.json"
 }

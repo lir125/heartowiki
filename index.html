@@ -20,6 +20,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI',
 .sticky-top { position: sticky; top: 0; z-index: 100; background: var(--bg-main); }
 header { background: var(--bg-card); padding: 40px 24px 32px; text-align: center; border-bottom: 1px solid var(--border); position: relative; }
 .title-wrap { margin: 0 auto; max-width: 480px; }
+.title-row { display: flex; justify-content: center; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.title-row .app-version { font-size: 0.75rem; color: var(--text-tertiary); font-weight: normal; }
 .dark-mode-toggle { position: absolute; top: 16px; right: 24px; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-card); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
 .dark-mode-toggle:hover { background: var(--pink-50); }
 body.dark .dark-mode-toggle { background: var(--pink-100); }
@@ -49,6 +51,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 .list-item.open { grid-column: 1 / -1; z-index: 1; }
 .list-item-ghost { opacity: 0.45; cursor: pointer; position: relative; z-index: 15; pointer-events: auto; }
 .list-item-ghost .list-item-detail { display: none !important; pointer-events: none; }
+.list-item-ghost .ghost-overlay { position: absolute; inset: 0; z-index: 5; cursor: pointer; border: none; background: transparent; width: 100%; height: 100%; padding: 0; font: inherit; color: inherit; }
 .list-item-name { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
 .list-item-name .icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
 .list-item-name .name { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; }
@@ -82,9 +85,11 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     <header>
         <button type="button" id="darkModeToggle" class="dark-mode-toggle" title="다크 모드">🌙</button>
         <div class="title-wrap">
-            <h1>두타위키</h1>
+            <div class="title-row">
+                <h1>두타위키</h1>
+                <span id="versionInfo" class="app-version"></span>
+            </div>
             <p class="title-sub">어류 · 곤충 · 조류 · 요리</p>
-            <p id="versionInfo" class="title-sub" style="margin-top:4px; font-size:0.75rem; color:var(--text-tertiary);"></p>
             <p id="madeBy" class="title-sub" style="margin-top:2px; font-size:0.7rem; color:var(--text-tertiary);">Made By 을현</p>
             <p id="emptyDataHint" class="empty-hint" style="display:none;">데이터가 비어 있습니다. 문서 폴더의 <strong>Heartowiki\data\config.json</strong>에 <strong>data_source</strong>와 <strong>github_repo</strong>(또는 drive_file_id)를 넣은 뒤 <strong>데이터 새로고침</strong>을 눌러주세요.</p>
             <p id="dataErrorHint" class="empty-hint" style="display:none; margin-top:8px; color:#c62828; font-size:0.9rem;"></p>
@@ -97,6 +102,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             <select id="locationFilter"><option value="">📍 지역 전체</option></select>
             <select id="levelFilter"><option value="">필요 취미 레벨 전체</option></select>
             <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
+            <select id="recipeSortBy" style="display:none;"><option value="excel">기본값</option><option value="price-asc">가격 낮은순</option><option value="price-desc">가격 높은순</option></select>
         </div>
         <div class="action-row">
             <label><input type="checkbox" id="hideCompleted"> 수집 완료 숨김</label>
@@ -177,11 +183,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 const previousOpenEl = grid.querySelector('.list-item.open');
                 const previousOpenName = previousOpenEl ? previousOpenEl.dataset.name : null;
                 if (wasOpen) {
-                    App.openCard = null;
-                    App.ghostCard = null;
-                    const st = Storage.loadSettings();
-                    Storage.saveSettings({ ...st, lastOpenCard: null });
-                    App.render();
+                    App.closeOpenCard();
                     return;
                 }
                 grid.querySelectorAll('.list-item.open').forEach(el => { el.classList.remove('open'); });
@@ -190,8 +192,6 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 App.ghostCard = (previousOpenEl && previousOpenEl !== wrap && previousOpenName)
                     ? { tab: App.currentTab, name: previousOpenName }
                     : null;
-                const st = Storage.loadSettings();
-                Storage.saveSettings({ ...st, lastOpenCard: App.openCard });
                 App.render();
             };
             wrap.appendChild(nameRow);
@@ -288,8 +288,17 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             wrap.className = 'list-item list-item-ghost';
             wrap.dataset.category = cat;
             wrap.dataset.name = name;
-            wrap.setAttribute('role', 'button');
-            wrap.setAttribute('tabindex', '0');
+            const overlay = document.createElement('button');
+            overlay.type = 'button';
+            overlay.className = 'ghost-overlay';
+            overlay.setAttribute('aria-label', '닫기: ' + name);
+            overlay.textContent = '';
+            overlay.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                App.closeOpenCard();
+            };
+            wrap.appendChild(overlay);
             const nameRow = document.createElement('div');
             nameRow.className = 'list-item-name';
             nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(name) + '</span><span class="chevron">▼</span>';
@@ -352,9 +361,10 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         sort(creatures, sortBy, cat) {
             const sorted = [...creatures];
             if (cat === '요리') {
+                if (sortBy === 'excel') return sorted;
                 sorted.sort((a, b) => {
                     const pA = parseFloat(a.가격) || 0, pB = parseFloat(b.가격) || 0;
-                    if (pA !== pB) return pA - pB;
+                    if (pA !== pB) return sortBy === 'price-desc' ? pB - pA : pA - pB;
                     return (a.명칭 || '').localeCompare(b.명칭 || '');
                 });
                 return sorted;
@@ -392,6 +402,12 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         userCreatures: { 어류: [], 곤충: [], 조류: [] },
         openCard: null,
         ghostCard: null,
+        closeOpenCard() {
+            if (this.openCard == null && this.ghostCard == null) return;
+            this.openCard = null;
+            this.ghostCard = null;
+            this.render();
+        },
         init() {
             CardManager.stars = Storage.loadStars();
             this.userCreatures = Storage.loadUserCreatures();
@@ -410,7 +426,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             this.switchTab(this.currentTab);
         },
         setupEvents() {
-            ['searchBox', 'locationFilter', 'levelFilter', 'weatherFilter', 'hideCompleted'].forEach(id => {
+            ['searchBox', 'locationFilter', 'levelFilter', 'weatherFilter', 'hideCompleted', 'recipeSortBy'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => this.render());
             });
@@ -423,27 +439,19 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
                 document.getElementById('darkModeToggle').title = isDark ? '라이트 모드' : '다크 모드';
             });
-            function closeOpenCard() {
-                App.openCard = null;
-                App.ghostCard = null;
-                const st = Storage.loadSettings();
-                Storage.saveSettings({ ...st, lastOpenCard: null });
-                App.render();
-            }
-            document.getElementById('dataGrid').addEventListener('mousedown', (e) => {
-                const ghost = e.target.closest('.list-item-ghost');
-                if (ghost) {
+            const grid = document.getElementById('dataGrid');
+            grid.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.list-item-ghost') || e.target.closest('.list-item.open .list-item-name')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    closeOpenCard();
+                    App.closeOpenCard();
                 }
             }, true);
-            document.getElementById('dataGrid').addEventListener('click', (e) => {
-                const ghost = e.target.closest('.list-item-ghost');
-                if (ghost) {
+            grid.addEventListener('click', (e) => {
+                if (e.target.closest('.list-item-ghost') || e.target.closest('.list-item.open .list-item-name')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    closeOpenCard();
+                    App.closeOpenCard();
                 }
             }, true);
         },
@@ -455,6 +463,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             this.updateFilters();
             document.getElementById('searchBox').placeholder = cat === '요리' ? '🔍 요리 이름 검색' : '🔍 생물 이름 검색';
             this.render();
+            window.scrollTo(0, 0);
         },
         updateFilters() {
             const cat = this.currentTab;
@@ -464,6 +473,13 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 const el = document.getElementById(id);
                 if (el) el.style.display = isRecipe ? 'none' : '';
             });
+            const recipeSortEl = document.getElementById('recipeSortBy');
+            if (recipeSortEl) recipeSortEl.style.display = isRecipe ? '' : 'none';
+            if (isRecipe && recipeSortEl) {
+                const st = Storage.loadSettings();
+                const v = (st.recipeSortBy || 'excel');
+                if (['excel', 'price-asc', 'price-desc'].indexOf(v) >= 0) recipeSortEl.value = v;
+            }
             const locs = FilterManager.getUnique(creatures, '지역');
             const locSel = document.getElementById('locationFilter');
             const cur = locSel.value;
@@ -503,26 +519,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         },
         render() {
             const grid = document.getElementById('dataGrid');
-            let openCard = null;
-            let scrollPos = 0;
-            if (this.openCard && this.openCard.tab === this.currentTab) {
-                openCard = this.openCard;
-                scrollPos = window.scrollY || document.documentElement.scrollTop || 0;
-            }
-            if (!openCard) {
-                const openEl = grid.querySelector('.list-item.open');
-                if (openEl && openEl.dataset.category && openEl.dataset.name) {
-                    openCard = { tab: this.currentTab, name: openEl.dataset.name };
-                    scrollPos = window.scrollY || document.documentElement.scrollTop || 0;
-                }
-            }
-            if (!openCard) {
-                const st = Storage.loadSettings();
-                if (st.lastOpenCard && st.lastOpenCard.tab === this.currentTab) {
-                    openCard = st.lastOpenCard;
-                    scrollPos = st.scrollPosition || 0;
-                }
-            }
+            let openCard = (this.openCard && this.openCard.tab === this.currentTab) ? this.openCard : null;
             grid.innerHTML = '';
             grid.classList.remove('loading');
             const opt = {
@@ -536,7 +533,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             let creatures = this.getAll(this.currentTab);
             creatures = FilterManager.filter(creatures, opt);
             if (this.currentTab === '요리') {
-                creatures = FilterManager.sort(creatures, 'price-asc', '요리');
+                const recipeSortEl = document.getElementById('recipeSortBy');
+                const recipeSortBy = (recipeSortEl && recipeSortEl.value) ? recipeSortEl.value : 'excel';
+                creatures = FilterManager.sort(creatures, recipeSortBy, '요리');
             }
             if (creatures.length === 0) {
                 const e = document.createElement('div');
@@ -544,10 +543,12 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 e.innerHTML = '<div class="empty-state-icon">🔍</div><div class="empty-state-text">검색 결과가 없습니다</div>';
                 grid.appendChild(e);
             } else {
-                const ghostFor = this.ghostCard && this.ghostCard.tab === this.currentTab ? this.ghostCard : null;
+                const ghostFor = openCard && openCard.tab === this.currentTab ? openCard : null;
+                let ghostAdded = false;
                 creatures.forEach(c => {
                     if (ghostFor && ghostFor.name === c.명칭) {
                         grid.appendChild(CardManager.createGhost(c, this.currentTab));
+                        ghostAdded = true;
                     }
                     const el = CardManager.createListItem(c, this.currentTab);
                     if (openCard && openCard.name === c.명칭) {
@@ -555,12 +556,15 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                     }
                     grid.appendChild(el);
                 });
-            }
-            if (openCard) {
-                requestAnimationFrame(() => { window.scrollTo(0, scrollPos); });
+                if (ghostFor && !ghostAdded) {
+                    const ghostCreature = this.getAll(this.currentTab).find(c => c.명칭 === ghostFor.name);
+                    if (ghostCreature) {
+                        grid.insertBefore(CardManager.createGhost(ghostCreature, this.currentTab), grid.firstChild);
+                    }
+                }
             }
             this.updateCounts();
-            this.saveSettings(openCard, scrollPos);
+            this.saveSettings();
         },
         updateCounts() {
             Object.keys(CATEGORY_CONFIG).forEach(c => {
@@ -587,11 +591,11 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             this.updateFilters();
             this.render();
         },
-        saveSettings(openCard, scrollPosition) {
+        saveSettings() {
             const prev = Storage.loadSettings();
             const s = { ...prev, currentTab: this.currentTab };
-            s.lastOpenCard = (openCard != null) ? openCard : (prev.lastOpenCard || null);
-            s.scrollPosition = (scrollPosition != null) ? scrollPosition : (prev.scrollPosition != null ? prev.scrollPosition : 0);
+            const recipeSortEl = document.getElementById('recipeSortBy');
+            if (this.currentTab === '요리' && recipeSortEl) s.recipeSortBy = recipeSortEl.value;
             Storage.saveSettings(s);
         },
         async refreshFromDrive() {
@@ -625,10 +629,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     function setVersionInfo(appVersion, dataVersion) {
         var el = document.getElementById('versionInfo');
         if (!el) return;
-        var parts = [];
-        if (appVersion) parts.push('앱 v' + appVersion);
-        if (dataVersion) parts.push('도감 데이터 v' + dataVersion);
-        el.textContent = parts.length ? parts.join(' · ') : '';
+        el.textContent = appVersion ? 'v' + appVersion : '';
     }
 
     function checkAppUpdate() {
