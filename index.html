@@ -556,12 +556,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                     }
                     grid.appendChild(el);
                 });
-                if (ghostFor && !ghostAdded) {
-                    const ghostCreature = this.getAll(this.currentTab).find(c => c.명칭 === ghostFor.name);
-                    if (ghostCreature) {
-                        grid.insertBefore(CardManager.createGhost(ghostCreature, this.currentTab), grid.firstChild);
-                    }
-                }
+                // 필터에 통과한 항목만 고스트 표시. 필터 변경으로 목록에 없으면 고스트 미표시
             }
             this.updateCounts();
             this.saveSettings();

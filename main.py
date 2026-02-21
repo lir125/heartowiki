@@ -12,6 +12,7 @@ import os
 import stat
 import subprocess
 import sys
+import time
 import webbrowser
 from pathlib import Path
 
@@ -89,8 +90,9 @@ def _fetch_data_from_github(repo: str, branch: str = "main", path: str = "hearto
     repo = repo.strip()
     branch = (branch or "main").strip()
     path = (path or "heartowiki.xlsx").strip().lstrip("/")
-    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{path}"
-    headers = {"User-Agent": "Heartowiki/1.0"}
+    # 캐시 무효화: 새로고침 시 GitHub/CDN 캐시를 피해 최신 xlsx 반영
+    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{path}?t={int(time.time())}"
+    headers = {"User-Agent": "Heartowiki/1.0", "Cache-Control": "no-cache", "Pragma": "no-cache"}
     r = requests.get(url, timeout=30, headers=headers)
     if r.status_code == 404:
         raise ValueError(
