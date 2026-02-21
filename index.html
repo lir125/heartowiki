@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>두근두근타운 도감</title>
+    <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg-main: #f5f5f5; --bg-card: #fff; --pink-50: #ebebeb; --pink-100: #e0e0e0; --pink-200: #bdbdbd; --pink-300: #9e9e9e; --pink-400: #757575; --pink-500: #616161; --pink-600: #424242;
+    --text-primary: #212121; --text-secondary: #616161; --text-tertiary: #9e9e9e; --border: #e0e0e0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.08); --shadow-md: 0 4px 12px rgba(0,0,0,0.12); --shadow-lg: 0 12px 24px rgba(0,0,0,0.16);
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text-primary); line-height: 1.6; padding-bottom: 100px; }
+header { background: var(--bg-card); padding: 40px 24px 32px; text-align: center; border-bottom: 1px solid var(--border); }
+.title-wrap { margin: 0 auto; max-width: 480px; }
+h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.03em; line-height: 1.2; }
+.title-sub { font-size: 0.85rem; color: var(--text-tertiary); margin-top: 8px; }
+.empty-hint { margin-top: 14px; font-size: 0.8rem; color: var(--text-secondary); }
+.empty-hint strong { color: var(--text-primary); }
+.tabs { display: flex; justify-content: center; gap: 8px; padding: 16px; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+.tab-btn { background: transparent; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; color: var(--text-secondary); }
+.tab-btn:hover { background: var(--pink-50); }
+.tab-btn.active { background: var(--pink-500); color: white; border-color: var(--pink-500); }
+.count { font-size: 12px; opacity: 0.8; margin-left: 6px; }
+.controls { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+.filter-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.search-box { flex: 1; min-width: 160px; }
+.search-box input, .filter-row select { height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); width: 100%; }
+.filter-row select { width: 130px; }
+.action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.action-row label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.action-row button { height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); }
+.action-row button:hover { background: var(--pink-50); color: var(--text-primary); }
+.action-row button.primary { background: var(--pink-500); color: white; border-color: var(--pink-500); }
+.grid { max-width: 640px; margin: 0 auto; padding: 0 24px; }
+.list-item { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 8px; overflow: hidden; transition: box-shadow 0.2s; }
+.list-item:hover { box-shadow: var(--shadow-sm); }
+.list-item.collected { opacity: 0.6; }
+.list-item-name { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+.list-item-name .icon { font-size: 22px; width: 32px; text-align: center; }
+.list-item-name .name { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; }
+.list-item-name .chevron { font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; }
+.list-item.open .list-item-name .chevron { transform: rotate(180deg); }
+.list-item-detail { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+.list-item.open .list-item-detail { display: block; padding-top: 12px; }
+.detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.detail-label { color: var(--text-tertiary); }
+.detail-value { color: var(--text-secondary); text-align: right; max-width: 70%; word-break: break-word; }
+.star-rating { display: flex; gap: 2px; font-size: 14px; margin-top: 8px; }
+.star { cursor: pointer; color: #e0e0e0; }
+.star.filled { color: #FFD700; }
+.list-item-delete { float: right; width: 28px; height: 28px; background: var(--pink-50); border: 1px solid var(--border); border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 8px; }
+.list-item-delete:hover { background: var(--pink-500); color: white; }
+.fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; background: var(--pink-500); color: white; border: none; border-radius: 50%; font-size: 22px; cursor: pointer; box-shadow: var(--shadow-lg); z-index: 1000; }
+.fab:hover { transform: scale(1.05); }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; justify-content: center; align-items: center; }
+.modal.show { display: flex; }
+.modal-content { background: var(--bg-card); border-radius: 16px; padding: 24px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: var(--shadow-lg); }
+.modal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: var(--pink-50); border: none; border-radius: 50%; font-size: 18px; cursor: pointer; }
+.modal-close:hover { background: var(--pink-500); color: white; }
+.modal-content h2 { margin-bottom: 20px; font-size: 20px; }
+.modal-content form { display: flex; flex-direction: column; gap: 12px; }
+.modal-content input, .modal-content select { height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); }
+.file-input-btn { background: var(--pink-50); border: 1px solid var(--pink-200); height: 42px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--pink-600); font-size: 13px; }
+.file-input-wrapper input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.image-preview { max-height: 160px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+.btn-save { background: var(--pink-500); color: white; height: 42px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.empty-state { grid-column: 1/-1; text-align: center; padding: 60px 24px; color: var(--text-tertiary); }
+.empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+.loading { text-align: center; padding: 40px; color: var(--text-tertiary); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title-wrap">
+            <h1>두근두근타운 도감</h1>
+            <p class="title-sub">어류 · 곤충 · 조류 · 요리</p>
+            <p id="versionInfo" class="title-sub" style="margin-top:4px; font-size:0.75rem; color:var(--text-tertiary);"></p>
+            <p id="emptyDataHint" class="empty-hint" style="display:none;">데이터가 비어 있습니다. 문서 폴더의 <strong>두근두근타운_도감\데이터\config.json</strong>에 <strong>data_source</strong>와 <strong>github_repo</strong>(또는 drive_file_id)를 넣은 뒤 <strong>데이터 새로고침</strong>을 눌러주세요.</p>
+            <p id="dataErrorHint" class="empty-hint" style="display:none; margin-top:8px; color:#c62828; font-size:0.9rem;"></p>
+        </div>
+    </header>
+    <nav class="tabs" id="tabsContainer"></nav>
+    <div class="controls">
+        <div class="filter-row">
+            <div class="search-box"><input type="text" id="searchBox" placeholder="🔍 생물 이름 검색"></div>
+            <select id="locationFilter"><option value="">📍 지역 전체</option></select>
+            <select id="levelFilter"><option value="">⭐ 레벨 전체</option></select>
+            <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
+            <select id="sortBy"><option value="level-asc">레벨 낮은 순</option><option value="level-desc">레벨 높은 순</option></select>
+        </div>
+        <div class="action-row">
+            <label><input type="checkbox" id="hideCompleted"> 수집 완료 숨김</label>
+            <label><input type="checkbox" id="showOnlyUserAdded"> 추가한 생물</label>
+            <button type="button" id="btnRefresh" class="primary">🔄 데이터 새로고침</button>
+            <button type="button" id="btnAppUpdate">📦 업데이트 확인</button>
+        </div>
+    </div>
+    <div id="dataGrid" class="grid">
+        <div class="loading" id="loadingState">데이터를 불러오는 중...</div>
+    </div>
+    <button class="fab" id="fabAdd" title="생물 추가">+</button>
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAddModal">×</button>
+            <h2>새 생물 추가</h2>
+            <form id="addForm">
+                <input type="text" id="newName" placeholder="이름 *" required>
+                <select id="newLocation"><option value="">지역 선택</option></select>
+                <input type="text" id="newSubLocation" placeholder="세부지역">
+                <input type="text" id="newLevel" placeholder="레벨">
+                <select id="newWeather"><option value="">날씨 선택</option></select>
+                <input type="text" id="newTime" placeholder="시간">
+                <div class="file-input-wrapper"><div class="file-input-btn" id="fileLabel">📷 이미지 선택</div><input type="file" id="newImage" accept="image/*"></div>
+                <img id="imagePreview" class="image-preview" style="display:none">
+                <button type="submit" class="btn-save">저장</button>
+            </form>
+        </div>
+    </div>
+    <div id="updateModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeUpdateModal">×</button>
+            <h2>📦 업데이트</h2>
+            <p id="updateMessage" style="margin-bottom:16px; color:var(--text-secondary);"></p>
+            <p id="updateDataHint" style="font-size:13px; color:var(--pink-600); margin-bottom:12px; display:none;"></p>
+            <p id="updateHint" style="font-size:13px; color:var(--text-tertiary); margin-bottom:16px;">아래 버튼을 누르면 새 버전을 받아 앱이 자동으로 교체·재시작됩니다.</p>
+            <button type="button" id="btnUpdateApply" class="btn-save" style="width:100%; margin-bottom:8px;">업데이트 적용</button>
+            <button type="button" id="btnUpdateDownload" class="btn-save" style="width:100%; background:var(--pink-300);">브라우저로 다운로드</button>
+        </div>
+    </div>
+
+    <script>
+(function() {
+    let CREATURES_DATA = { 어류: [], 곤충: [], 조류: [], 요리: [] };
+    const CATEGORY_CONFIG = { '어류': { icon: '🐟', order: 1 }, '곤충': { icon: '🦋', order: 2 }, '조류': { icon: '🦅', order: 3 }, '요리': { icon: '🍳', order: 4 } };
+    let _userState = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: { currentTab: '어류', sortBy: 'level-asc' } };
+
+    function getApi() {
+        if (window.pywebview && window.pywebview.api) return window.pywebview.api;
+        return null;
+    }
+
+    const Storage = {
+        loadStars() { return _userState.stars || {}; },
+        saveStars(s) { _userState.stars = s; const api = getApi(); if (api) api.save_user_data(s, null, null); },
+        loadUserCreatures() { return _userState.userCreatures || { 어류: [], 곤충: [], 조류: [], 요리: [] }; },
+        saveUserCreatures(c) { _userState.userCreatures = c; const api = getApi(); if (api) api.save_user_data(null, c, null); },
+        loadSettings() { return _userState.settings || { currentTab: '어류', sortBy: 'level-asc' }; },
+        saveSettings(s) { _userState.settings = s; const api = getApi(); if (api) api.save_user_data(null, null, s); }
+    };
+
+    const CardManager = {
+        stars: {},
+        getStars(cat, name) { return this.stars[cat + '_' + name] || 0; },
+        setStars(cat, name, rating) {
+            const key = cat + '_' + name;
+            const cur = this.stars[key] || 0;
+            this.stars[key] = (cur === 1 && rating === 1) ? 0 : rating;
+            Storage.saveStars(this.stars);
+            App.render();
+        },
+        createListItem(item, cat) {
+            const isRecipe = cat === '요리';
+            const name = item.명칭 || '';
+            const stars = isRecipe ? 0 : this.getStars(cat, name);
+            const wrap = document.createElement('div');
+            wrap.className = 'list-item' + (stars === 5 ? ' collected' : '');
+            wrap.dataset.category = cat;
+            wrap.dataset.name = name;
+            const nameRow = document.createElement('div');
+            nameRow.className = 'list-item-name';
+            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(name) + '</span><span class="chevron">▼</span>';
+            nameRow.onclick = () => {
+                const grid = document.getElementById('dataGrid');
+                grid.querySelectorAll('.list-item.open').forEach(el => { if (el !== wrap) el.classList.remove('open'); });
+                wrap.classList.toggle('open');
+            };
+            wrap.appendChild(nameRow);
+            const detail = document.createElement('div');
+            detail.className = 'list-item-detail';
+            function addRow(label, value) { if (!value) return; const r = document.createElement('div'); r.className = 'detail-row'; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span><span class="detail-value">' + escapeHtml(value) + '</span>'; detail.appendChild(r); }
+            if (isRecipe) {
+                addRow('재료', item.재료);
+                addRow('레시피', item.레시피);
+                addRow('가격', item.가격);
+                addRow('비고', item.비고);
+            } else {
+                addRow('📍 지역', item.지역);
+                addRow('📌 세부지역', item.세부지역);
+                addRow('⭐ 레벨', item.레벨 ? 'Lv.' + item.레벨 : '');
+                addRow('🌤️ 날씨', item.날씨영향);
+                addRow('🕐 시간대', item.시간대);
+                addRow('크기', item.크기);
+                addRow('가격', item.가격);
+                addRow('비고', item.비고);
+                const starRow = document.createElement('div');
+                starRow.className = 'detail-row';
+                starRow.innerHTML = '<span class="detail-label">⭐ 수집</span>';
+                const starC = document.createElement('div');
+                starC.className = 'star-rating';
+                for (let i = 1; i <= 5; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'star ' + (i <= stars ? 'filled' : '');
+                    s.textContent = '★';
+                    s.onclick = e => { e.stopPropagation(); this.setStars(cat, name, i); };
+                    starC.appendChild(s);
+                }
+                starRow.appendChild(starC);
+                detail.appendChild(starRow);
+            }
+            if (item.isUserAdded) {
+                const del = document.createElement('button');
+                del.className = 'list-item-delete';
+                del.textContent = '×';
+                del.onclick = e => { e.stopPropagation(); App.deleteCreature(cat, name); };
+                detail.appendChild(del);
+            }
+            wrap.appendChild(detail);
+            return wrap;
+        }
+    };
+    function escapeHtml(s) {
+        if (s == null) return '';
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    const FilterManager = {
+        filter(creatures, opt) {
+            return creatures.filter(c => {
+                if (opt.search) {
+                const searchText = (opt.category === '요리') ? (c.명칭 + (c.재료||'') + (c.레시피||'')) : (c.명칭 + (c.지역||'') + (c.세부지역||''));
+                if (!searchText.toLowerCase().includes(opt.search.toLowerCase())) return false;
+            }
+                if (opt.category !== '요리') {
+                if (opt.location && c.지역 !== opt.location) return false;
+                if (opt.level && c.레벨 !== opt.level) return false;
+                if (opt.weather) {
+                    const w = c.날씨영향 || '';
+                    if (opt.weather === '비' && !w.includes('비')) return false;
+                    if (opt.weather === '해' && !w.includes('해')) return false;
+                    if (opt.weather === '무지개' && !w.includes('무지개')) return false;
+                }
+                if (opt.hideCompleted && CardManager.getStars(opt.category, c.명칭) >= 5) return false;
+            }
+            if (opt.showOnlyUserAdded && !c.isUserAdded) return false;
+                return true;
+            });
+        },
+        sort(creatures, sortBy, cat) {
+            const sorted = [...creatures];
+            if (cat === '요리') {
+                sorted.sort((a, b) => (a.명칭 || '').localeCompare(b.명칭 || ''));
+                return sorted;
+            }
+            sorted.sort((a, b) => {
+                const sA = CardManager.getStars(cat, a.명칭), sB = CardManager.getStars(cat, b.명칭);
+                if (sA !== sB) return sB - sA;
+                const lA = parseFloat(a.레벨) || 0, lB = parseFloat(b.레벨) || 0;
+                return sortBy === 'level-asc' ? lA - lB : lB - lA;
+            });
+            return sorted;
+        },
+        getUnique(creatures, field) {
+            const vals = new Set();
+            creatures.forEach(c => { if (c[field]) vals.add(c[field]); });
+            return Array.from(vals).sort();
+        }
+    };
+
+    function renderTabs() {
+        const container = document.getElementById('tabsContainer');
+        container.innerHTML = '';
+        const sorted = Object.entries(CATEGORY_CONFIG).sort((a, b) => a[1].order - b[1].order);
+        sorted.forEach(([name, config]) => {
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn' + (name === App.currentTab ? ' active' : '');
+            btn.dataset.category = name;
+            btn.innerHTML = config.icon + ' ' + name + ' <span class="count" id="count-' + name + '">0</span>';
+            btn.addEventListener('click', () => App.switchTab(name));
+            container.appendChild(btn);
+        });
+    }
+
+    const App = {
+        currentTab: '어류',
+        userCreatures: { 어류: [], 곤충: [], 조류: [] },
+        init() {
+            CardManager.stars = Storage.loadStars();
+            this.userCreatures = Storage.loadUserCreatures();
+            const settings = Storage.loadSettings();
+            this.currentTab = settings.currentTab || '어류';
+            document.getElementById('sortBy').value = settings.sortBy || 'level-asc';
+            renderTabs();
+            this.setupEvents();
+            this.updateFilters();
+            this.switchTab(this.currentTab);
+        },
+        setupEvents() {
+            ['searchBox', 'locationFilter', 'levelFilter', 'weatherFilter', 'sortBy', 'hideCompleted', 'showOnlyUserAdded'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => this.render());
+            });
+            document.getElementById('btnRefresh').addEventListener('click', () => this.refreshFromDrive());
+            document.getElementById('btnAppUpdate').addEventListener('click', checkAppUpdate);
+            document.getElementById('fabAdd').addEventListener('click', openAddModal);
+            document.getElementById('closeAddModal').addEventListener('click', closeAddModal);
+            document.getElementById('addForm').addEventListener('submit', saveNewCreature);
+        },
+        switchTab(cat) {
+            this.currentTab = cat;
+            renderTabs();
+            this.updateFilters();
+            this.render();
+            this.saveSettings();
+            document.getElementById('fabAdd').style.display = cat === '요리' ? 'none' : 'block';
+        },
+        updateFilters() {
+            const cat = this.currentTab;
+            const creatures = this.getAll(cat);
+            const isRecipe = cat === '요리';
+            ['locationFilter', 'levelFilter', 'weatherFilter', 'sortBy'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = isRecipe ? 'none' : '';
+            });
+            const locs = FilterManager.getUnique(creatures, '지역');
+            const locSel = document.getElementById('locationFilter');
+            const cur = locSel.value;
+            locSel.innerHTML = '<option value="">📍 지역 전체</option>';
+            locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
+            if (locs.includes(cur)) locSel.value = cur;
+            const levs = FilterManager.getUnique(creatures, '레벨');
+            const levSel = document.getElementById('levelFilter');
+            const curL = levSel.value;
+            levSel.innerHTML = '<option value="">⭐ 레벨 전체</option>';
+            levs.forEach(l => { if (l) { const o = document.createElement('option'); o.value = l; o.textContent = 'Lv.' + l; levSel.appendChild(o); } });
+            if (levs.includes(curL)) levSel.value = curL;
+            const weathers = new Set();
+            creatures.forEach(c => {
+                if (c.날씨영향) {
+                    if (c.날씨영향.includes('비')) weathers.add('비');
+                    if (c.날씨영향.includes('해')) weathers.add('해');
+                    if (c.날씨영향.includes('무지개')) weathers.add('무지개');
+                }
+            });
+            const wSel = document.getElementById('weatherFilter');
+            const curW = wSel.value;
+            wSel.innerHTML = '<option value="">🌤️ 날씨 전체</option>';
+            Array.from(weathers).sort().forEach(w => { const o = document.createElement('option'); o.value = w; o.textContent = w; wSel.appendChild(o); });
+            if (weathers.has(curW)) wSel.value = curW;
+            this.updateModalFilters();
+        },
+        updateModalFilters() {
+            const all = [...(CREATURES_DATA.어류||[]), ...(CREATURES_DATA.곤충||[]), ...(CREATURES_DATA.조류||[]), ...this.userCreatures.어류, ...this.userCreatures.곤충, ...this.userCreatures.조류];
+            const locs = FilterManager.getUnique(all, '지역');
+            const sel = document.getElementById('newLocation');
+            sel.innerHTML = '<option value="">지역 선택</option>';
+            locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; sel.appendChild(o); });
+            const weathers = new Set();
+            all.forEach(c => {
+                if (c.날씨영향) {
+                    if (c.날씨영향.includes('비')) weathers.add('비');
+                    if (c.날씨영향.includes('해')) weathers.add('해');
+                    if (c.날씨영향.includes('무지개')) weathers.add('무지개');
+                }
+            });
+            const wSel = document.getElementById('newWeather');
+            wSel.innerHTML = '<option value="">날씨 선택</option>';
+            Array.from(weathers).sort().forEach(w => { const o = document.createElement('option'); o.value = w; o.textContent = w; wSel.appendChild(o); });
+        },
+        getAll(cat) {
+            return [...(CREATURES_DATA[cat] || []), ...(this.userCreatures[cat] || [])];
+        },
+        render() {
+            const grid = document.getElementById('dataGrid');
+            grid.innerHTML = '';
+            grid.classList.remove('loading');
+            const opt = {
+                category: this.currentTab,
+                search: document.getElementById('searchBox').value.trim(),
+                location: document.getElementById('locationFilter').value,
+                level: document.getElementById('levelFilter').value,
+                weather: document.getElementById('weatherFilter').value,
+                hideCompleted: document.getElementById('hideCompleted').checked,
+                showOnlyUserAdded: document.getElementById('showOnlyUserAdded').checked
+            };
+            let creatures = this.getAll(this.currentTab);
+            creatures = FilterManager.filter(creatures, opt);
+            creatures = FilterManager.sort(creatures, document.getElementById('sortBy').value, this.currentTab);
+            if (creatures.length === 0) {
+                const e = document.createElement('div');
+                e.className = 'empty-state';
+                e.innerHTML = '<div class="empty-state-icon">🔍</div><div class="empty-state-text">검색 결과가 없습니다</div>';
+                grid.appendChild(e);
+            } else {
+                creatures.forEach(c => grid.appendChild(CardManager.createListItem(c, this.currentTab)));
+            }
+            this.updateCounts();
+        },
+        updateCounts() {
+            Object.keys(CATEGORY_CONFIG).forEach(c => {
+                const el = document.getElementById('count-' + c);
+                if (el) el.textContent = this.getAll(c).length;
+            });
+        },
+        addCreature(c) {
+            if (this.userCreatures[this.currentTab].some(x => x.명칭 === c.명칭)) return;
+            this.userCreatures[this.currentTab].push(c);
+            Storage.saveUserCreatures(this.userCreatures);
+            this.updateFilters();
+            this.render();
+        },
+        deleteCreature(cat, name) {
+            if (!confirm('"' + name + '"을(를) 삭제하시겠습니까?')) return;
+            const idx = this.userCreatures[cat].findIndex(c => c.명칭 === name);
+            if (idx === -1) return;
+            this.userCreatures[cat].splice(idx, 1);
+            Storage.saveUserCreatures(this.userCreatures);
+            delete CardManager.stars[cat + '_' + name];
+            Storage.saveStars(CardManager.stars);
+            this.updateFilters();
+            this.render();
+        },
+        saveSettings() {
+            Storage.saveSettings({ currentTab: this.currentTab, sortBy: document.getElementById('sortBy').value });
+        },
+        async refreshFromDrive() {
+            const api = getApi();
+            if (!api) return;
+            document.getElementById('dataGrid').innerHTML = '<div class="loading">데이터를 다시 불러오는 중...</div>';
+            document.getElementById('dataGrid').classList.add('loading');
+            try {
+                const data = await api.refresh_data();
+                CREATURES_DATA = data.base || CREATURES_DATA;
+                _userState = data.user || _userState;
+                CardManager.stars = _userState.stars || {};
+                App.userCreatures = _userState.userCreatures || { 어류: [], 곤충: [], 조류: [], 요리: [] };
+                var total = (CREATURES_DATA.어류||[]).length + (CREATURES_DATA.곤충||[]).length + (CREATURES_DATA.조류||[]).length + (CREATURES_DATA.요리||[]).length;
+                var errHint = document.getElementById('dataErrorHint');
+                if (errHint) {
+                    var msg = data.lastError || '';
+                    errHint.textContent = msg;
+                    errHint.style.display = (total === 0 && msg) ? 'block' : 'none';
+                }
+                document.getElementById('emptyDataHint').style.display = total === 0 ? 'block' : 'none';
+                setVersionInfo(data.appVersion, data.dataVersion);
+                App.updateFilters();
+                App.render();
+            } catch (e) {
+                alert('새로고침 실패: ' + (e.message || e));
+            }
+        }
+    };
+
+    function setVersionInfo(appVersion, dataVersion) {
+        var el = document.getElementById('versionInfo');
+        if (!el) return;
+        var parts = [];
+        if (appVersion) parts.push('앱 v' + appVersion);
+        if (dataVersion) parts.push('도감 데이터 v' + dataVersion);
+        el.textContent = parts.length ? parts.join(' · ') : '';
+    }
+
+    function checkAppUpdate() {
+        var api = getApi();
+        if (!api) return;
+        Promise.all([ api.check_app_update(), api.check_data_update ? api.check_data_update() : Promise.resolve({ hasUpdate: false, latestVersion: '' }) ]).then(function(arr) {
+            var appResult = arr[0];
+            var dataResult = arr[1] || { hasUpdate: false, currentVersion: '', latestVersion: '' };
+            var updateMessage = document.getElementById('updateMessage');
+            var updateDataHint = document.getElementById('updateDataHint');
+            var updateHint = document.getElementById('updateHint');
+            var modal = document.getElementById('updateModal');
+            var btnApply = document.getElementById('btnUpdateApply');
+            var btnDownload = document.getElementById('btnUpdateDownload');
+            updateDataHint.style.display = 'none';
+            updateDataHint.textContent = '';
+
+            if (dataResult.hasUpdate && dataResult.latestVersion) {
+                updateDataHint.textContent = '도감 데이터 v' + dataResult.latestVersion + ' 사용 가능. 아래 "데이터 새로고침" 버튼으로 적용하세요.';
+                updateDataHint.style.display = 'block';
+            }
+
+            if (!appResult.hasUpdate) {
+                if (dataResult.hasUpdate) {
+                    updateMessage.textContent = '앱은 최신 버전입니다. 도감 데이터만 새로 받을 수 있습니다.';
+                    updateHint.style.display = 'none';
+                    btnApply.style.display = 'none';
+                    btnDownload.style.display = 'none';
+                } else {
+                    updateMessage.textContent = '앱과 도감 데이터 모두 최신 버전입니다.';
+                    updateHint.style.display = 'none';
+                    btnApply.style.display = 'none';
+                    btnDownload.style.display = 'none';
+                }
+                document.getElementById('closeUpdateModal').onclick = function() { modal.classList.remove('show'); };
+                modal.classList.add('show');
+                return;
+            }
+
+            updateMessage.textContent = appResult.message + ' (버전 ' + appResult.version + ')';
+            updateHint.style.display = 'block';
+            btnApply.style.display = 'block';
+            btnDownload.style.display = 'block';
+            var downloadUrl = appResult.download_url || '';
+            var driveFileId = appResult.exe_file_id || '';
+
+            btnApply.onclick = function() {
+                btnApply.disabled = true;
+                btnApply.textContent = '다운로드 중...';
+                api.apply_update(downloadUrl, driveFileId).then(function(result) {
+                    if (result.success) {
+                        updateHint.textContent = '업데이트 적용 중입니다. 앱이 곧 종료된 뒤 다시 실행됩니다.';
+                        btnApply.textContent = '종료 중...';
+                        setTimeout(function() { api.exit_app(); }, 1500);
+                    } else {
+                        btnApply.disabled = false;
+                        btnApply.textContent = '업데이트 적용';
+                        alert(result.error || '업데이트 적용에 실패했습니다.');
+                    }
+                }).catch(function() {
+                    btnApply.disabled = false;
+                    btnApply.textContent = '업데이트 적용';
+                    alert('업데이트 적용에 실패했습니다.');
+                });
+            };
+            btnDownload.onclick = function() {
+                if (downloadUrl) api.open_download_url(downloadUrl);
+                else if (driveFileId) api.open_download_url('https://drive.google.com/uc?export=download&id=' + driveFileId);
+                modal.classList.remove('show');
+            };
+            document.getElementById('closeUpdateModal').onclick = function() { modal.classList.remove('show'); };
+            modal.classList.add('show');
+        }).catch(function() { alert('업데이트 확인에 실패했습니다.'); });
+    }
+    function openAddModal() {
+        document.getElementById('addModal').classList.add('show');
+        document.getElementById('addForm').reset();
+        document.getElementById('imagePreview').style.display = 'none';
+        document.getElementById('fileLabel').textContent = '📷 이미지 선택';
+        App.updateModalFilters();
+    }
+    function closeAddModal() {
+        document.getElementById('addModal').classList.remove('show');
+    }
+    function saveNewCreature(e) {
+        e.preventDefault();
+        const name = document.getElementById('newName').value.trim();
+        if (!name) return;
+        const imgPrev = document.getElementById('imagePreview');
+        App.addCreature({
+            명칭: name,
+            지역: document.getElementById('newLocation').value || '',
+            세부지역: document.getElementById('newSubLocation').value.trim(),
+            레벨: document.getElementById('newLevel').value.trim(),
+            날씨영향: document.getElementById('newWeather').value || '',
+            시간영향: document.getElementById('newTime').value.trim(),
+            이미지: imgPrev.style.display === 'block' ? imgPrev.src : '',
+            isUserAdded: true
+        });
+        closeAddModal();
+    }
+    document.getElementById('newImage').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('imagePreview').src = ev.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            document.getElementById('fileLabel').textContent = file.name;
+        }
+    });
+
+    function bootstrap(data) {
+        CREATURES_DATA = data.base || CREATURES_DATA;
+        _userState = data.user || _userState;
+        document.getElementById('loadingState').remove();
+        var total = (CREATURES_DATA.어류||[]).length + (CREATURES_DATA.곤충||[]).length + (CREATURES_DATA.조류||[]).length + (CREATURES_DATA.요리||[]).length;
+        var hint = document.getElementById('emptyDataHint');
+        var errHint = document.getElementById('dataErrorHint');
+        if (hint) hint.style.display = total === 0 ? 'block' : 'none';
+        if (errHint) {
+            var msg = data.lastError || '';
+            errHint.textContent = msg;
+            errHint.style.display = (total === 0 && msg) ? 'block' : 'none';
+        }
+        setVersionInfo(data.appVersion, data.dataVersion);
+        App.init();
+    }
+
+    window.addEventListener('pywebviewready', function() {
+        const api = getApi();
+        if (!api) {
+            document.getElementById('loadingState').textContent = 'API를 사용할 수 없습니다.';
+            return;
+        }
+        api.get_app_data().then(bootstrap).catch(function(err) {
+            document.getElementById('loadingState').textContent = '데이터 로드 실패: ' + (err.message || err);
+        });
+    });
+})();
+    </script>
+</body>
+</html>

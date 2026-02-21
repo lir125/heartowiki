@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# 가상환경·빌드
+venv/
+build/
+dist/
+*.exe
+config.json
+
+# 기타
+.env
+*.log
+.DS_Store
