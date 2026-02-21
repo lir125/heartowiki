@@ -68,7 +68,7 @@ def load_config() -> dict:
         "github_data_branch": "main",
         "update_source": "github",
         "update_info_file_id": "",
-        "github_update_path": "",
+        "github_update_path": "app_version.json",
     }
     if not CONFIG_PATH.exists():
         return default
@@ -78,6 +78,9 @@ def load_config() -> dict:
             config = {**default, **data}
         if not (config.get("github_repo") or "").strip():
             config["github_repo"] = default["github_repo"]
+        # 예전 config에 github_update_path가 비어 있으면 app_version.json 사용
+        if not (config.get("github_update_path") or "").strip():
+            config["github_update_path"] = default["github_update_path"]
         return config
     except Exception:
         return default
@@ -171,7 +174,7 @@ def _check_update_github_file(repo: str, branch: str, path: str) -> dict:
 
 def _check_update_github(repo: str, config: dict) -> dict:
     """GitHub 업데이트 확인. github_update_path가 있으면 파일에서, 없으면 Releases에서 확인."""
-    path = (config.get("github_update_path") or "").strip()
+    path = (config.get("github_update_path") or "app_version.json").strip() or "app_version.json"
     if path:
         branch = (config.get("github_data_branch") or "main").strip()
         return _check_update_github_file(repo, branch, path)

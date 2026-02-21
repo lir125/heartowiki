@@ -12,6 +12,7 @@ venv/
 build/
 dist/
 *.exe
+!Heartowiki.exe
 config.json
 
 # 기타
