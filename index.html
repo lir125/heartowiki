@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>두타위키</title>
+    <!-- 이모지 사용처: 🌙/☀️ 다크모드토글, 🔍 검색/빈결과, 📍 지역필터, 🌤️ 날씨필터, 🕐 시간대, 🔄 새로고침, 📦 업데이트·기본아이콘, 🐟어류 🦋곤충 🦅조류 🍳요리 탭, ⭐/★ 수집·가격별 -->
     <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -99,7 +100,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     <div class="controls">
         <div class="filter-row">
             <div class="search-box"><input type="text" id="searchBox" placeholder="🔍 생물 이름 검색"></div>
-            <select id="locationFilter"><option value="">📍 지역 전체</option></select>
+            <select id="locationFilter"><option value="">🚩 지역 전체</option></select>
             <select id="levelFilter"><option value="">필요 취미 레벨 전체</option></select>
             <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
             <select id="recipeSortBy" style="display:none;"><option value="excel">기본값</option><option value="price-asc">가격 낮은순</option><option value="price-desc">가격 높은순</option></select>
@@ -145,12 +146,20 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         saveSettings(s) { _userState.settings = s; const api = getApi(); if (api) api.save_user_data(null, null, s); }
     };
 
+    function isWeirdFood(item) {
+        if (!item) return false;
+        var n = (item.명칭 || '') + (item.비고 || '');
+        return n.indexOf('괴상') >= 0;
+    }
+
     const CardManager = {
         stars: {},
         priceStars: {},
         getStars(cat, name) { return this.stars[cat + '_' + name] || 0; },
         getPriceStars(cat, name) { return this.priceStars[cat + '_' + name] ?? 1; },
         setStars(cat, name, rating) {
+            var item = (CREATURES_DATA[cat] || []).concat(App.userCreatures[cat] || []).find(function(c) { return c.명칭 === name; });
+            if (cat === '요리' && isWeirdFood(item)) rating = Math.min(1, rating);
             const key = cat + '_' + name;
             const cur = this.stars[key] || 0;
             this.stars[key] = (cur === 1 && rating === 1) ? 0 : rating;
@@ -158,6 +167,8 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             App.render();
         },
         setPriceStars(cat, name, rating) {
+            var item = (CREATURES_DATA[cat] || []).concat(App.userCreatures[cat] || []).find(function(c) { return c.명칭 === name; });
+            if (cat === '요리' && isWeirdFood(item)) rating = 1;
             const key = cat + '_' + name;
             this.priceStars[key] = Math.max(1, Math.min(5, rating));
             App.render();
@@ -165,15 +176,18 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         createListItem(item, cat) {
             const isRecipe = cat === '요리';
             const name = item.명칭 || '';
-            const stars = this.getStars(cat, name);
-            const priceStars = this.getPriceStars(cat, name);
+            const weird = isRecipe && isWeirdFood(item);
+            var stars = this.getStars(cat, name);
+            var priceStars = this.getPriceStars(cat, name);
+            if (weird) { stars = Math.min(1, stars); priceStars = 1; }
             const wrap = document.createElement('div');
             wrap.className = 'list-item' + (stars === 5 ? ' collected' : '');
             wrap.dataset.category = cat;
             wrap.dataset.name = name;
+            const displayName = (isRecipe && (name.indexOf('획득 불가') >= 0 || (item.비고 || '').indexOf('획득 불가') >= 0)) ? '❌ ' + name : name;
             const nameRow = document.createElement('div');
             nameRow.className = 'list-item-name';
-            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(name) + '</span><span class="chevron">▼</span>';
+            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(displayName) + '</span><span class="chevron">▼</span>';
             nameRow.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -199,7 +213,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             function addRow(label, value) { if (value === undefined || value === null) return; if (value === '') return; const r = document.createElement('div'); r.className = 'detail-row'; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span><span class="detail-value">' + escapeHtml(value) + '</span>'; detail.appendChild(r); }
             function addRowPre(label, value) { if (value === undefined || value === null || value === '') return; const r = document.createElement('div'); r.className = 'detail-row'; const v = document.createElement('span'); v.className = 'detail-value'; v.style.whiteSpace = 'pre-line'; v.textContent = value; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span>'; r.appendChild(v); detail.appendChild(r); }
             if (isRecipe) {
-                if (item.레벨 != null && item.레벨 !== '') addRow('필요 취미 레벨', 'Lv.' + (formatInteger(item.레벨) || item.레벨));
+                if (item.레벨 != null && item.레벨 !== '') addRow('필요 취미 레벨', formatLevelDisplay(item.레벨));
                 addRowPre('재료', item.재료);
                 addRow('레시피', item.레시피);
                 const basePrice = parseFloat(item.가격) || 0;
@@ -213,11 +227,17 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 priceVal.style.alignItems = 'center';
                 priceVal.style.justifyContent = 'flex-end';
                 priceVal.style.gap = '8px';
-                priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <button type="button" class="star-adj" data-dir="-">−</button> <span class="star-display">★' + priceStars + '</span> <button type="button" class="star-adj" data-dir="+">+</button>';
                 priceRow.innerHTML = '<span class="detail-label">가격</span>';
+                if (weird) {
+                    priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <span class="star-display">★1</span>';
+                } else {
+                    priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <button type="button" class="star-adj" data-dir="-">−</button> <span class="star-display">★' + priceStars + '</span> <button type="button" class="star-adj" data-dir="+">+</button>';
+                }
                 priceRow.appendChild(priceVal);
-                priceRow.querySelector('.star-adj').onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars - 1); };
-                priceRow.querySelectorAll('.star-adj')[1].onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars + 1); };
+                if (!weird) {
+                    priceRow.querySelector('.star-adj').onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars - 1); };
+                    priceRow.querySelectorAll('.star-adj')[1].onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars + 1); };
+                }
                 detail.appendChild(priceRow);
                 addRow('비고', item.비고);
                 const starRow = document.createElement('div');
@@ -225,7 +245,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 starRow.innerHTML = '<span class="detail-label">⭐ 수집</span>';
                 const starC = document.createElement('div');
                 starC.className = 'star-rating';
-                for (let i = 1; i <= 5; i++) {
+                for (let i = 1; i <= (weird ? 1 : 5); i++) {
                     const s = document.createElement('span');
                     s.className = 'star ' + (i <= stars ? 'filled' : '');
                     s.textContent = '★';
@@ -235,9 +255,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 starRow.appendChild(starC);
                 detail.appendChild(starRow);
             } else {
-                addRow('📍 지역', item.지역);
+                addRow('🚩 지역', item.지역);
                 addRow('📌 세부지역', item.세부지역);
-                addRow('필요 취미 레벨', item.레벨 != null && item.레벨 !== '' ? 'Lv.' + (formatInteger(item.레벨) || item.레벨) : '');
+                addRow('필요 취미 레벨', item.레벨 != null && item.레벨 !== '' ? formatLevelDisplay(item.레벨) : '');
                 addRow('🌤️ 날씨', item.날씨영향);
                 addRow('🕐 시간대', item.시간대);
                 addRow('크기', formatInteger(item.크기) || item.크기 || '');
@@ -283,6 +303,8 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         },
         createGhost(item, cat) {
             const name = item.명칭 || '';
+            const isRecipeGhost = cat === '요리';
+            const displayName = (isRecipeGhost && (name.indexOf('획득 불가') >= 0 || (item.비고 || '').indexOf('획득 불가') >= 0)) ? '❌ ' + name : name;
             const wrap = document.createElement('div');
             wrap.className = 'list-item list-item-ghost';
             wrap.dataset.category = cat;
@@ -300,7 +322,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             wrap.appendChild(overlay);
             const nameRow = document.createElement('div');
             nameRow.className = 'list-item-name';
-            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(name) + '</span><span class="chevron">▼</span>';
+            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(displayName) + '</span><span class="chevron">▼</span>';
             nameRow.style.pointerEvents = 'none';
             wrap.appendChild(nameRow);
             const detail = document.createElement('div');
@@ -326,6 +348,13 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         const n = parseFloat(v);
         return isNaN(n) ? '' : String(Math.round(n));
     }
+    function formatLevelDisplay(l) {
+        if (l == null || l === '') return '';
+        const s = String(l).trim();
+        if (s.indexOf('빙설') >= 0) return '☃️ ' + s;
+        if (s.indexOf('획득불가') >= 0 || s.indexOf('획득 불가') >= 0) return '❌ ' + s;
+        return 'Lv.' + (formatInteger(l) || s);
+    }
     const STAR_MULT = { 1: 1, 2: 1.5, 3: 2, 4: 4, 5: 8 };
 
     const FilterManager = {
@@ -335,9 +364,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                 const searchText = (opt.category === '요리') ? (c.명칭 + (c.재료||'') + (c.레시피||'')) : (c.명칭 + (c.지역||'') + (c.세부지역||''));
                 if (!searchText.toLowerCase().includes(opt.search.toLowerCase())) return false;
             }
+                if (opt.level && c.레벨 !== opt.level) return false;
                 if (opt.category !== '요리') {
                 if (opt.location && c.지역 !== opt.location) return false;
-                if (opt.level && c.레벨 !== opt.level) return false;
                 if (opt.weather) {
                     const w = c.날씨영향 || '';
                     if (opt.weather === '비' && !w.includes('비')) return false;
@@ -457,6 +486,13 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             this.currentTab = cat;
             this.openCard = null;
             this.ghostCard = null;
+            document.getElementById('searchBox').value = '';
+            document.getElementById('locationFilter').value = '';
+            document.getElementById('levelFilter').value = '';
+            document.getElementById('weatherFilter').value = '';
+            document.getElementById('hideCompleted').checked = false;
+            var recipeSortEl = document.getElementById('recipeSortBy');
+            if (recipeSortEl) recipeSortEl.value = 'excel';
             renderTabs();
             this.updateFilters();
             document.getElementById('searchBox').placeholder = cat === '요리' ? '🔍 요리 이름 검색' : '🔍 생물 이름 검색';
@@ -467,10 +503,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             const cat = this.currentTab;
             const creatures = this.getAll(cat);
             const isRecipe = cat === '요리';
-            ['locationFilter', 'levelFilter', 'weatherFilter'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = isRecipe ? 'none' : '';
-            });
+            document.getElementById('locationFilter').style.display = isRecipe ? 'none' : '';
+            document.getElementById('levelFilter').style.display = '';
+            document.getElementById('weatherFilter').style.display = isRecipe ? 'none' : '';
             const recipeSortEl = document.getElementById('recipeSortBy');
             if (recipeSortEl) recipeSortEl.style.display = isRecipe ? '' : 'none';
             if (isRecipe && recipeSortEl) {
@@ -481,7 +516,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             const locs = FilterManager.getUnique(creatures, '지역');
             const locSel = document.getElementById('locationFilter');
             const cur = locSel.value;
-            locSel.innerHTML = '<option value="">📍 지역 전체</option>';
+            locSel.innerHTML = '<option value="">🚩 지역 전체</option>';
             locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
             if (locs.includes(cur)) locSel.value = cur;
             const levs = FilterManager.getUnique(creatures, '레벨').filter(l => l);
@@ -495,7 +530,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             const levSel = document.getElementById('levelFilter');
             const curL = levSel.value;
             levSel.innerHTML = '<option value="">필요 취미 레벨 전체</option>';
-            levs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'Lv.' + (formatInteger(l) || l); levSel.appendChild(o); });
+            levs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = formatLevelDisplay(l); levSel.appendChild(o); });
             if (levs.includes(curL)) levSel.value = curL;
             const weathers = new Set();
             creatures.forEach(c => {
@@ -509,7 +544,11 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
             const wSel = document.getElementById('weatherFilter');
             const curW = wSel.value;
             wSel.innerHTML = '<option value="">🌤️ 날씨 전체</option>';
-            Array.from(weathers).sort().forEach(w => { const o = document.createElement('option'); o.value = w; o.textContent = w; wSel.appendChild(o); });
+            Array.from(weathers).sort().forEach(w => {
+                const o = document.createElement('option'); o.value = w;
+                o.textContent = (w === '맑은 날' ? '☀️ ' : w === '무지개' ? '🌈 ' : w === '비' ? '🌧️ ' : w === '해' ? '☀️ ' : '') + w;
+                wSel.appendChild(o);
+            });
             if (weathers.has(curW)) wSel.value = curW;
         },
         getAll(cat) {

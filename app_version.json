@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
-  "message": "버그 수정 및 기능 개선",
+  "version": "1.0.3",
+  "message": "요리 - 괴상한 음식, 음료는 1성만 나오게 수정, 필요 취미 레벨 추가",
   "download_url": "https://raw.githubusercontent.com/lir125/heartowiki/main/Heartowiki.exe"
 }
