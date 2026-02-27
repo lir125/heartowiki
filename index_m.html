@@ -2,7 +2,10 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f5f5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>두타위키</title>
     <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -16,7 +19,7 @@ body.dark {
     --text-primary: #e8e8e8; --text-secondary: #b0b0b0; --text-tertiary: #808080; --border: #404040;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.4); --shadow-lg: 0 12px 24px rgba(0,0,0,0.5);
 }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text-primary); line-height: 1.6; padding-bottom: 100px; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text-primary); line-height: 1.6; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
 .sticky-top { position: sticky; top: 0; z-index: 100; background: var(--bg-main); }
 header { background: var(--bg-card); padding: 40px 24px 32px; text-align: center; border-bottom: 1px solid var(--border); position: relative; }
 .title-wrap { margin: 0 auto; max-width: 480px; }
@@ -78,6 +81,51 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 24px; color: var(--text-tertiary); }
 .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
 .loading { text-align: center; padding: 40px; color: var(--text-tertiary); grid-column: 1/-1; }
+
+/* 모바일 버전 (768px 이하) */
+@media (max-width: 768px) {
+    body { padding-bottom: 80px; padding-top: env(safe-area-inset-top, 0); }
+    header { padding: 28px 16px 24px; }
+    .dark-mode-toggle { top: 12px; right: 16px; width: 44px; height: 44px; font-size: 20px; }
+    h1 { font-size: 1.75rem; }
+    .title-sub { font-size: 0.8rem; }
+    .empty-hint { font-size: 0.75rem; padding: 0 4px; }
+    .tabs { padding: 12px 8px; gap: 6px; flex-wrap: wrap; justify-content: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab-btn { padding: 12px 14px; font-size: 13px; min-height: 44px; min-width: 72px; }
+    .controls { margin: 16px auto; padding: 0 12px 8px; }
+    .filter-row { gap: 6px; margin-bottom: 6px; }
+    .search-box { min-width: 0; width: 100%; }
+    .search-box input, .filter-row select { height: 44px; padding: 0 14px; font-size: 16px; min-width: 0; }
+    .filter-row select { width: 100%; max-width: 160px; }
+    .action-row { margin-bottom: 6px; gap: 10px; }
+    .action-row label { font-size: 14px; min-height: 44px; align-items: center; }
+    .action-row label input { width: 20px; height: 20px; }
+    .action-row button { height: 44px; padding: 0 18px; font-size: 14px; min-height: 44px; }
+    .grid { padding: 0 12px; grid-template-columns: 1fr; gap: 8px; }
+    .list-item-name { padding: 16px 14px; min-height: 52px; }
+    .list-item-name .icon { font-size: 24px; width: 36px; }
+    .list-item-name .name { font-size: 16px; }
+    .list-item-detail { padding: 12px 14px 16px; }
+    .detail-row { padding: 8px 0; font-size: 14px; }
+    .detail-row-price .star-adj { width: 36px; height: 36px; font-size: 18px; min-width: 36px; min-height: 36px; }
+    .star-rating { font-size: 18px; gap: 4px; margin-top: 10px; }
+    .star { padding: 4px; }
+    .modal-content { width: 95%; max-width: none; max-height: 85vh; padding: 20px 16px; margin: 12px; border-radius: 12px; }
+    .modal-close { width: 40px; height: 40px; top: 10px; right: 10px; font-size: 22px; }
+    .btn-save { height: 48px; font-size: 15px; min-height: 48px; }
+    .empty-state { padding: 40px 16px; }
+    .loading { padding: 32px 16px; font-size: 15px; }
+}
+@media (max-width: 768px) {
+    .list-item-detail .detail-row:last-child { display: none !important; }
+    .action-row label:first-of-type { display: none !important; }
+    .list-item.collected { opacity: 1; }
+}
+@media (max-width: 480px) {
+    header { padding: 24px 12px 20px; }
+    .filter-row { flex-direction: column; }
+    .filter-row select { max-width: none; }
+}
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -324,7 +372,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                         var set = localStorage.getItem(LS_SETTINGS);
                         if (set) { var s = JSON.parse(set); if (s) user.settings = s; }
                     } catch (e) {}
-                    resolve({ base: base, user: user, lastError: '', appVersion: 'web', dataVersion: base.data_version || '' });
+                    resolve({ base: base, user: user, lastError: '', appVersion: '_web', dataVersion: base.data_version || '' });
                 }
                 var total = (base.어류||[]).length + (base.곤충||[]).length + (base.조류||[]).length + (base.요리||[]).length;
                 if (total > 0) { loadUser(); return; }
@@ -667,7 +715,12 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         init() {
             CardManager.stars = Storage.loadStars();
             this.userCreatures = Storage.loadUserCreatures();
-            const settings = Storage.loadSettings();
+            var settings = Storage.loadSettings();
+            var isMobile = window.matchMedia('(max-width: 768px)').matches;
+            if (isMobile && settings.darkMode !== false) {
+                settings.darkMode = true;
+                Storage.saveSettings(settings);
+            }
             this.currentTab = settings.currentTab || '어류';
             if (settings.darkMode) {
                 document.body.classList.add('dark');
