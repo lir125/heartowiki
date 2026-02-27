@@ -40,8 +40,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 .controls { max-width: 1200px; margin: 24px auto; padding: 0 24px 8px; }
 .filter-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
 .search-box { flex: 1; min-width: 160px; }
+.filter-selects-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .search-box input, .filter-row select { height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); width: 100%; }
-.filter-row select { width: 130px; }
+.filter-selects-row select { width: 130px; }
 .action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
 .action-row label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
 .action-row button { height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); }
@@ -95,10 +96,11 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     .tab-btn { padding: 8px 10px; font-size: 12px; min-height: 38px; min-width: 0; flex-shrink: 0; white-space: nowrap; }
     .tab-btn .count { font-size: 11px; margin-left: 2px; }
     .controls { margin: 8px auto; padding: 0 10px 6px; }
-    .filter-row { gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; align-items: center; }
-    .search-box { min-width: 0; flex: 1; min-width: 60px; }
-    .search-box input, .filter-row select { height: 36px; padding: 0 10px; font-size: 14px; min-width: 0; }
-    .filter-row select { width: auto; flex: 1; min-width: 0; max-width: 28%; font-size: 13px; }
+    .filter-row { flex-direction: column; gap: 6px; margin-bottom: 4px; align-items: stretch; }
+    .search-box { width: 100%; min-width: 0; flex: none; }
+    .search-box input { height: 36px; padding: 0 10px; font-size: 16px; }
+    .filter-selects-row { display: flex; gap: 6px; flex-wrap: nowrap; min-width: 0; }
+    .filter-selects-row select { height: 36px; padding: 0 10px; font-size: 16px; flex: 1; min-width: 0; width: auto; }
     .action-row { margin-bottom: 0; gap: 8px; min-height: 36px; align-items: center; }
     .action-row label { font-size: 13px; min-height: auto; }
     .action-row label input { width: 18px; height: 18px; }
@@ -125,7 +127,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 }
 @media (max-width: 480px) {
     header { padding: 14px 10px 12px; }
-    .filter-row select { max-width: 26%; font-size: 12px; padding: 0 6px; }
+    .filter-selects-row select { font-size: 14px; padding: 0 6px; }
 }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -149,10 +151,12 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     <div class="controls">
         <div class="filter-row">
             <div class="search-box"><input type="text" id="searchBox" placeholder="🔍 생물 이름 검색"></div>
-            <select id="locationFilter"><option value="">🚩 지역 전체</option></select>
-            <select id="levelFilter"><option value="">필요 취미 레벨 전체</option></select>
-            <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
-            <select id="recipeSortBy" style="display:none;"><option value="excel">기본값</option><option value="price-asc">가격 낮은순</option><option value="price-desc">가격 높은순</option></select>
+            <div class="filter-selects-row">
+                <select id="locationFilter"><option value="">🚩 지역 전체</option></select>
+                <select id="levelFilter"><option value="">필요 취미 레벨 전체</option></select>
+                <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
+                <select id="recipeSortBy" style="display:none;"><option value="excel">기본값</option><option value="price-asc">가격 낮은순</option><option value="price-desc">가격 높은순</option></select>
+            </div>
         </div>
         <div class="action-row">
             <label><input type="checkbox" id="hideCompleted"> 수집 완료 숨김</label>
