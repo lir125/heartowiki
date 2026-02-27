@@ -85,22 +85,24 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 /* 모바일 버전 (768px 이하) */
 @media (max-width: 768px) {
     body { padding-bottom: 80px; padding-top: env(safe-area-inset-top, 0); }
-    header { padding: 28px 16px 24px; }
-    .dark-mode-toggle { top: 12px; right: 16px; width: 44px; height: 44px; font-size: 20px; }
-    h1 { font-size: 1.75rem; }
-    .title-sub { font-size: 0.8rem; }
-    .empty-hint { font-size: 0.75rem; padding: 0 4px; }
-    .tabs { padding: 12px 8px; gap: 6px; flex-wrap: wrap; justify-content: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .tab-btn { padding: 12px 14px; font-size: 13px; min-height: 44px; min-width: 72px; }
-    .controls { margin: 16px auto; padding: 0 12px 8px; }
-    .filter-row { gap: 6px; margin-bottom: 6px; }
-    .search-box { min-width: 0; width: 100%; }
-    .search-box input, .filter-row select { height: 44px; padding: 0 14px; font-size: 16px; min-width: 0; }
-    .filter-row select { width: 100%; max-width: 160px; }
-    .action-row { margin-bottom: 6px; gap: 10px; }
-    .action-row label { font-size: 14px; min-height: 44px; align-items: center; }
-    .action-row label input { width: 20px; height: 20px; }
-    .action-row button { height: 44px; padding: 0 18px; font-size: 14px; min-height: 44px; }
+    header { padding: 16px 12px 14px; }
+    .dark-mode-toggle { top: 10px; right: 12px; width: 40px; height: 40px; font-size: 18px; }
+    h1 { font-size: 1.5rem; }
+    .title-sub { font-size: 0.75rem; margin-top: 4px; }
+    .title-wrap .empty-hint { margin-top: 8px; }
+    .empty-hint { font-size: 0.7rem; padding: 0 2px; }
+    .tabs { padding: 8px 6px; gap: 4px; flex-wrap: nowrap; justify-content: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab-btn { padding: 8px 10px; font-size: 12px; min-height: 38px; min-width: 0; flex-shrink: 0; white-space: nowrap; }
+    .tab-btn .count { font-size: 11px; margin-left: 2px; }
+    .controls { margin: 8px auto; padding: 0 10px 6px; }
+    .filter-row { gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; align-items: center; }
+    .search-box { min-width: 0; flex: 1; min-width: 60px; }
+    .search-box input, .filter-row select { height: 36px; padding: 0 10px; font-size: 14px; min-width: 0; }
+    .filter-row select { width: auto; flex: 1; min-width: 0; max-width: 28%; font-size: 13px; }
+    .action-row { margin-bottom: 0; gap: 8px; min-height: 36px; align-items: center; }
+    .action-row label { font-size: 13px; min-height: auto; }
+    .action-row label input { width: 18px; height: 18px; }
+    .action-row button { height: 36px; padding: 0 12px; font-size: 13px; min-height: 36px; }
     .grid { padding: 0 12px; grid-template-columns: 1fr; gap: 8px; }
     .list-item-name { padding: 16px 14px; min-height: 52px; }
     .list-item-name .icon { font-size: 24px; width: 36px; }
@@ -122,9 +124,8 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     .list-item.collected { opacity: 1; }
 }
 @media (max-width: 480px) {
-    header { padding: 24px 12px 20px; }
-    .filter-row { flex-direction: column; }
-    .filter-row select { max-width: none; }
+    header { padding: 14px 10px 12px; }
+    .filter-row select { max-width: 26%; font-size: 12px; padding: 0 6px; }
 }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
