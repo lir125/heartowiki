@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>두타위키</title>
+    <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg-main: #f5f5f5; --bg-card: #fff; --pink-50: #ebebeb; --pink-100: #e0e0e0; --pink-200: #bdbdbd; --pink-300: #9e9e9e; --pink-400: #757575; --pink-500: #616161; --pink-600: #424242;
+    --text-primary: #212121; --text-secondary: #616161; --text-tertiary: #9e9e9e; --border: #e0e0e0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.08); --shadow-md: 0 4px 12px rgba(0,0,0,0.12); --shadow-lg: 0 12px 24px rgba(0,0,0,0.16);
+}
+body.dark {
+    --bg-main: #1a1a1a; --bg-card: #2d2d2d; --pink-50: #3a3a3a; --pink-100: #404040; --pink-200: #505050; --pink-300: #606060; --pink-400: #888; --pink-500: #aaa; --pink-600: #ccc;
+    --text-primary: #e8e8e8; --text-secondary: #b0b0b0; --text-tertiary: #808080; --border: #404040;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.4); --shadow-lg: 0 12px 24px rgba(0,0,0,0.5);
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text-primary); line-height: 1.6; padding-bottom: 100px; }
+.sticky-top { position: sticky; top: 0; z-index: 100; background: var(--bg-main); }
+header { background: var(--bg-card); padding: 40px 24px 32px; text-align: center; border-bottom: 1px solid var(--border); position: relative; }
+.title-wrap { margin: 0 auto; max-width: 480px; }
+.title-row { display: flex; justify-content: center; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.title-row .app-version { font-size: 0.75rem; color: var(--text-tertiary); font-weight: normal; }
+.dark-mode-toggle { position: absolute; top: 16px; right: 24px; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-card); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+.dark-mode-toggle:hover { background: var(--pink-50); }
+body.dark .dark-mode-toggle { background: var(--pink-100); }
+h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.03em; line-height: 1.2; }
+.title-sub { font-size: 0.85rem; color: var(--text-tertiary); margin-top: 8px; }
+.empty-hint { margin-top: 14px; font-size: 0.8rem; color: var(--text-secondary); }
+.empty-hint strong { color: var(--text-primary); }
+.tabs { display: flex; justify-content: center; gap: 8px; padding: 16px; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+.tab-btn { background: transparent; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; color: var(--text-secondary); }
+.tab-btn:hover { background: var(--pink-50); }
+.tab-btn.active { background: var(--pink-500); color: white; border-color: var(--pink-500); }
+.count { font-size: 12px; opacity: 0.8; margin-left: 6px; }
+.controls { max-width: 1200px; margin: 24px auto; padding: 0 24px 8px; }
+.filter-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.search-box { flex: 1; min-width: 160px; }
+.search-box input, .filter-row select { height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); width: 100%; }
+.filter-row select { width: 130px; }
+.action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.action-row label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.action-row button { height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); }
+.action-row button:hover { background: var(--pink-50); color: var(--text-primary); }
+.action-row button.primary { background: var(--pink-500); color: white; border-color: var(--pink-500); }
+.grid { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-content: start; }
+.list-item { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.2s; }
+.list-item:hover { box-shadow: var(--shadow-sm); }
+.list-item.collected { opacity: 0.6; }
+.list-item.open { grid-column: 1 / -1; z-index: 1; }
+.list-item-ghost { opacity: 0.45; cursor: pointer; position: relative; z-index: 15; pointer-events: auto; }
+.list-item-ghost .list-item-detail { display: none !important; pointer-events: none; }
+.list-item-ghost .ghost-overlay { position: absolute; inset: 0; z-index: 5; cursor: pointer; border: none; background: transparent; width: 100%; height: 100%; padding: 0; font: inherit; color: inherit; }
+.list-item-name { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+.list-item-name .icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
+.list-item-name .name { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; }
+.list-item-name .chevron { font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; flex-shrink: 0; }
+.list-item.open .list-item-name .chevron { transform: rotate(180deg); }
+.list-item-detail { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+.list-item.open .list-item-detail { display: block; padding-top: 12px; }
+.detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.detail-label { color: var(--text-tertiary); }
+.detail-value { color: var(--text-secondary); text-align: right; max-width: 70%; word-break: break-word; }
+.star-rating { display: flex; gap: 2px; font-size: 14px; margin-top: 8px; }
+.star { cursor: pointer; color: #e0e0e0; }
+.star.filled { color: #FFD700; }
+.detail-row-price .star-adj { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); cursor: pointer; font-size: 16px; line-height: 1; color: var(--text-secondary); }
+.detail-row-price .star-adj:hover { background: var(--pink-50); color: var(--text-primary); }
+.detail-row-price .star-display { font-size: 13px; color: var(--text-secondary); min-width: 1.8em; text-align: center; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; justify-content: center; align-items: center; }
+.modal.show { display: flex; }
+.modal-content { background: var(--bg-card); border-radius: 16px; padding: 24px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: var(--shadow-lg); }
+.modal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: var(--pink-50); border: none; border-radius: 50%; font-size: 18px; cursor: pointer; }
+.modal-close:hover { background: var(--pink-500); color: white; }
+.modal-content h2 { margin-bottom: 20px; font-size: 20px; }
+.btn-save { background: var(--pink-500); color: white; height: 42px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.empty-state { grid-column: 1/-1; text-align: center; padding: 60px 24px; color: var(--text-tertiary); }
+.empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+.loading { text-align: center; padding: 40px; color: var(--text-tertiary); grid-column: 1/-1; }
+    </style>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="sticky-top">
+    <header>
+        <button type="button" id="darkModeToggle" class="dark-mode-toggle" title="다크 모드">🌙</button>
+        <div class="title-wrap">
+            <div class="title-row">
+                <h1>두타위키</h1>
+                <span id="versionInfo" class="app-version"></span>
+            </div>
+            <p class="title-sub">어류 · 곤충 · 조류 · 요리</p>
+            <p id="madeBy" class="title-sub" style="margin-top:2px; font-size:0.7rem; color:var(--text-tertiary);">Made By 을현</p>
+            <p id="emptyDataHint" class="empty-hint" style="display:none;">데이터가 비어 있습니다. <strong>데이터 새로고침</strong>을 눌러 주세요. (GitHub 저장소의 heartowiki.xlsx에서 불러옵니다.)</p>
+            <p id="dataErrorHint" class="empty-hint" style="display:none; margin-top:8px; color:#c62828; font-size:0.9rem;"></p>
+        </div>
+    </header>
+    <nav class="tabs" id="tabsContainer"></nav>
+    <div class="controls">
+        <div class="filter-row">
+            <div class="search-box"><input type="text" id="searchBox" placeholder="🔍 생물 이름 검색"></div>
+            <select id="locationFilter"><option value="">🚩 지역 전체</option></select>
+            <select id="levelFilter"><option value="">필요 취미 레벨 전체</option></select>
+            <select id="weatherFilter"><option value="">🌤️ 날씨 전체</option></select>
+            <select id="recipeSortBy" style="display:none;"><option value="excel">기본값</option><option value="price-asc">가격 낮은순</option><option value="price-desc">가격 높은순</option></select>
+        </div>
+        <div class="action-row">
+            <label><input type="checkbox" id="hideCompleted"> 수집 완료 숨김</label>
+            <button type="button" id="btnRefresh" class="primary">🔄 데이터 새로고침</button>
+        </div>
+    </div>
+    </div>
+    <div id="dataGrid" class="grid">
+        <div class="loading" id="loadingState">데이터를 불러오는 중...</div>
+    </div>
+    <div id="updateModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeUpdateModal">×</button>
+            <h2>📦 업데이트</h2>
+            <p id="updateMessage" style="margin-bottom:16px; color:var(--text-secondary);"></p>
+            <p id="updateDataHint" style="font-size:13px; color:var(--pink-600); margin-bottom:12px; display:none;"></p>
+            <p id="updateHint" style="font-size:13px; color:var(--text-tertiary); margin-bottom:16px;">웹 버전에서는 앱 업데이트가 없습니다.</p>
+            <button type="button" id="btnUpdateApply" class="btn-save" style="width:100%; margin-bottom:8px; display:none;">업데이트 적용</button>
+            <button type="button" id="btnUpdateDownload" class="btn-save" style="width:100%; background:var(--pink-300); display:none;">브라우저로 다운로드</button>
+        </div>
+    </div>
+
+    <script>
+(function() {
+    var GITHUB_REPO = 'lir125/heartowiki';
+    var GITHUB_BRANCH = 'main';
+    var XLSX_PATH = 'heartowiki.xlsx';
+    var WEB_XLSX_URL = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/' + GITHUB_BRANCH + '/' + XLSX_PATH;
+    var GITHUB_API_XLSX_URL = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + XLSX_PATH + '?ref=' + GITHUB_BRANCH;
+    var LS_BASE = 'heartowiki_m_base';
+    var LS_COLLECTION = 'heartowiki_m_collection';
+    var LS_SETTINGS = 'heartowiki_m_settings';
+
+    function val(row, idx) {
+        if (idx < 0 || idx >= row.length) return '';
+        var v = row[idx];
+        return (v != null ? String(v).trim() : '');
+    }
+    function colIndex(firstRow, name) {
+        for (var i = 0; i < firstRow.length; i++) {
+            if ((firstRow[i] != null ? String(firstRow[i]).trim() : '') === name) return i;
+        }
+        return -1;
+    }
+    function colIndexAny(firstRow, names) {
+        for (var n = 0; n < names.length; n++) {
+            var i = colIndex(firstRow, names[n]);
+            if (i >= 0) return i;
+        }
+        return -1;
+    }
+    function xlsxToCreaturesData(ab) {
+        if (typeof XLSX === 'undefined') throw new Error('엑셀 파싱 라이브러리를 불러올 수 없습니다.');
+        var wb = XLSX.read(ab, { type: 'array', cellDates: false, cellNF: false, cellText: false });
+        var result = { 어류: [], 곤충: [], 조류: [], 요리: [] };
+        var names = wb.SheetNames || [];
+
+        if (names.indexOf('도감 정보') >= 0) {
+            var wsInfo = wb.Sheets['도감 정보'];
+            var rowsInfo = XLSX.utils.sheet_to_json(wsInfo, { header: 1 });
+            if (rowsInfo && rowsInfo.length > 1) {
+                var firstInfo = rowsInfo[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
+                var iVer = firstInfo.indexOf('도감 버전');
+                if (iVer >= 0 && rowsInfo[1][iVer] != null && String(rowsInfo[1][iVer]).trim())
+                    result.data_version = String(rowsInfo[1][iVer]).trim();
+            }
+        }
+
+        var sheetFish = names.indexOf('어류 관찰') >= 0 ? '어류 관찰' : (names.indexOf('어류') >= 0 ? '어류' : null);
+        if (sheetFish) {
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetFish], { header: 1 });
+            if (rows && rows.length > 0) {
+                var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
+                var iName = colIndexAny(first, ['이름', '명칭']);
+                if (iName >= 0) {
+                    var iLevel = colIndex(first, '레벨'), iLoc = colIndexAny(first, ['위치', '지역']), iSize = colIndex(first, '크기');
+                    var iPrice = colIndex(first, '가격'), iTime = colIndex(first, '시간대'), iWeather = colIndex(first, '날씨'), iNote = colIndex(first, '비고');
+                    for (var r = 1; r < rows.length; r++) {
+                        var row = rows[r];
+                        var name = val(row, iName);
+                        if (!name) continue;
+                        result.어류.push({ 명칭: name, 지역: val(row, iLoc), 세부지역: '', 레벨: val(row, iLevel), 날씨영향: val(row, iWeather), 이미지: '', 크기: val(row, iSize), 가격: val(row, iPrice), 시간대: val(row, iTime), 비고: val(row, iNote) });
+                    }
+                }
+            }
+        }
+
+        var sheetBirds = names.indexOf('새 관찰 일지') >= 0 ? '새 관찰 일지' : (names.indexOf('조류') >= 0 ? '조류' : (names.indexOf('새') >= 0 ? '새' : null));
+        if (!sheetBirds) { for (var n = 0; n < names.length; n++) { if ((names[n] || '').indexOf('조류') >= 0) { sheetBirds = names[n]; break; } } }
+        if (sheetBirds) {
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetBirds], { header: 1 });
+            if (rows && rows.length > 0) {
+                var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
+                var iName = colIndexAny(first, ['이름', '명칭']);
+                if (iName >= 0) {
+                    var iLevel = colIndex(first, '레벨'), iLoc = colIndexAny(first, ['위치', '지역']), iSub = colIndex(first, '세부위치');
+                    var iTime = colIndex(first, '시간대'), iWeather = colIndexAny(first, ['날씨', '날씨영향']);
+                    for (var r = 1; r < rows.length; r++) {
+                        var row = rows[r];
+                        var name = val(row, iName);
+                        if (!name) continue;
+                        result.조류.push({ 명칭: name, 지역: val(row, iLoc), 세부지역: val(row, iSub), 레벨: val(row, iLevel), 날씨영향: val(row, iWeather), 이미지: '', 시간대: val(row, iTime), 비고: '' });
+                    }
+                }
+            }
+        }
+
+        var sheetBug = names.indexOf('곤충 이야기') >= 0 ? '곤충 이야기' : (names.indexOf('곤충') >= 0 ? '곤충' : null);
+        if (!sheetBug) { for (var n = 0; n < names.length; n++) { if ((names[n] || '').indexOf('곤충') >= 0) { sheetBug = names[n]; break; } } }
+        if (sheetBug) {
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetBug], { header: 1 });
+            if (rows && rows.length > 0) {
+                var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
+                var iName = colIndexAny(first, ['이름', '명칭']);
+                if (iName >= 0) {
+                    var iLevel = colIndex(first, '레벨'), iLoc = colIndexAny(first, ['위치', '지역']), iSub = colIndex(first, '세부위치');
+                    var iTime = colIndex(first, '시간대'), iWeather = colIndexAny(first, ['날씨', '날씨영향']);
+                    for (var r = 1; r < rows.length; r++) {
+                        var row = rows[r];
+                        var name = val(row, iName);
+                        if (!name) continue;
+                        result.곤충.push({ 명칭: name, 지역: val(row, iLoc), 세부지역: val(row, iSub), 레벨: val(row, iLevel), 날씨영향: val(row, iWeather), 이미지: '', 시간대: val(row, iTime), 비고: '' });
+                    }
+                }
+            }
+        }
+
+        if (names.indexOf('미식 라이프') >= 0) {
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets['미식 라이프'], { header: 1 });
+            if (rows && rows.length > 0) {
+                var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
+                var iName = colIndex(first, '이름');
+                if (iName >= 0) {
+                    var iLevel = colIndex(first, '레벨'), iIng = colIndex(first, '재료'), iRecipe = colIndex(first, '레시피'), iPrice = colIndex(first, '가격'), iNote = colIndex(first, '비고');
+                    for (var r = 1; r < rows.length; r++) {
+                        var row = rows[r];
+                        var name = val(row, iName);
+                        if (!name) continue;
+                        result.요리.push({ 명칭: name, 레벨: iLevel >= 0 ? val(row, iLevel) : '', 재료: val(row, iIng), 레시피: val(row, iRecipe), 가격: val(row, iPrice), 비고: val(row, iNote) });
+                    }
+                }
+            }
+        }
+
+        if (!result.data_version) result.data_version = '1.0.1';
+        return result;
+    }
+
+    function isXlsxBuffer(ab) {
+        if (!ab || ab.byteLength < 4) return false;
+        var u8 = new Uint8Array(ab);
+        return u8[0] === 0x50 && u8[1] === 0x4B;
+    }
+    function base64ToArrayBuffer(base64) {
+        var binary = atob(base64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes.buffer;
+    }
+    function fetchXlsxViaGitHubApi() {
+        return fetch(GITHUB_API_XLSX_URL, { headers: { 'Accept': 'application/vnd.github.v3+json' }, cache: 'no-store' }).then(function(r) {
+            if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+            return r.json();
+        }).then(function(data) {
+            if (!data || !data.content || data.encoding !== 'base64') throw new Error('API 응답 형식 오류');
+            return base64ToArrayBuffer(data.content.replace(/\s/g, ''));
+        });
+    }
+    function fetchAsArrayBuffer(url) {
+        return fetch(url, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }, mode: 'cors' }).then(function(r) {
+            if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+            return r.blob();
+        }).then(function(blob) { return blob.arrayBuffer(); });
+    }
+    function fetchXlsxFromRaw(url) {
+        var proxies = [
+            null,
+            'https://corsproxy.io/?url=' + encodeURIComponent(url),
+            'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+        ];
+        function tryNext(i) {
+            var fetchUrl = proxies[i] === null ? url : proxies[i];
+            return fetchAsArrayBuffer(fetchUrl).then(function(ab) {
+                if (!isXlsxBuffer(ab)) throw new Error('응답이 엑셀 파일이 아닙니다');
+                return ab;
+            }).catch(function(err) {
+                if (i + 1 < proxies.length) return tryNext(i + 1);
+                throw err;
+            });
+        }
+        return tryNext(0);
+    }
+    function fetchXlsx() {
+        var url = WEB_XLSX_URL + '?t=' + Date.now();
+        return fetchXlsxViaGitHubApi().catch(function() { return fetchXlsxFromRaw(url); });
+    }
+
+    var webApi = {
+        get_app_data: function() {
+            return new Promise(function(resolve) {
+                var base = { 어류: [], 곤충: [], 조류: [], 요리: [] };
+                try {
+                    var cached = localStorage.getItem(LS_BASE);
+                    if (cached) {
+                        var parsed = JSON.parse(cached);
+                        if (parsed && (parsed.어류 || parsed.곤충 || parsed.조류 || parsed.요리)) base = parsed;
+                    }
+                } catch (e) {}
+                function loadUser() {
+                    var user = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: { currentTab: '어류', sortBy: 'level-asc' } };
+                    try {
+                        var col = localStorage.getItem(LS_COLLECTION);
+                        if (col) {
+                            var c = JSON.parse(col);
+                            if (c.stars) user.stars = c.stars;
+                            if (c.userCreatures) user.userCreatures = c.userCreatures;
+                        }
+                        var set = localStorage.getItem(LS_SETTINGS);
+                        if (set) { var s = JSON.parse(set); if (s) user.settings = s; }
+                    } catch (e) {}
+                    resolve({ base: base, user: user, lastError: '', appVersion: 'web', dataVersion: base.data_version || '' });
+                }
+                var total = (base.어류||[]).length + (base.곤충||[]).length + (base.조류||[]).length + (base.요리||[]).length;
+                if (total > 0) { loadUser(); return; }
+                fetchXlsx().then(function(ab) {
+                    var data = xlsxToCreaturesData(ab);
+                    if (data && (data.어류 || data.곤충 || data.조류 || data.요리)) {
+                        try { localStorage.setItem(LS_BASE, JSON.stringify(data)); } catch (e) {}
+                        base = data;
+                    }
+                    loadUser();
+                }).catch(function(err) {
+                    resolve({ base: base, user: (function() {
+                        var u = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: {} };
+                        try {
+                            var col = localStorage.getItem(LS_COLLECTION); if (col) { var c = JSON.parse(col); if (c.stars) u.stars = c.stars; if (c.userCreatures) u.userCreatures = c.userCreatures; }
+                            var set = localStorage.getItem(LS_SETTINGS); if (set) u.settings = JSON.parse(set) || {};
+                        } catch (e) {}
+                        return u;
+                    })(), lastError: '도감 데이터를 불러오지 못했습니다. GitHub 저장소의 heartowiki.xlsx를 확인하세요. ' + (err.message || err), appVersion: 'web', dataVersion: '' });
+                });
+            });
+        },
+        save_user_data: function(stars, userCreatures, settings) {
+            try {
+                var col = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] } };
+                var cur = localStorage.getItem(LS_COLLECTION);
+                if (cur) { var c = JSON.parse(cur); if (c.stars) col.stars = c.stars; if (c.userCreatures) col.userCreatures = c.userCreatures; }
+                if (stars != null) col.stars = stars;
+                if (userCreatures != null) col.userCreatures = userCreatures;
+                localStorage.setItem(LS_COLLECTION, JSON.stringify(col));
+                if (settings != null) {
+                    var s = {}; var curSet = localStorage.getItem(LS_SETTINGS);
+                    if (curSet) try { s = JSON.parse(curSet); } catch (e) {}
+                    for (var k in settings) s[k] = settings[k];
+                    localStorage.setItem(LS_SETTINGS, JSON.stringify(s));
+                }
+            } catch (e) {}
+        },
+        refresh_data: function() {
+            var self = this;
+            return fetchXlsx().then(function(ab) {
+                var data = xlsxToCreaturesData(ab);
+                if (data && (data.어류 || data.곤충 || data.조류 || data.요리)) try { localStorage.setItem(LS_BASE, JSON.stringify(data)); } catch (e) {}
+                return self.get_app_data();
+            }).catch(function(err) {
+                return self.get_app_data().then(function(res) { res.lastError = '새로고침 실패: ' + (err.message || err); return res; });
+            });
+        },
+        check_app_update: function() { return Promise.resolve({ hasUpdate: false }); },
+        check_data_update: function() { return Promise.resolve({ hasUpdate: false, currentVersion: '', latestVersion: '' }); },
+        apply_update: function() { return Promise.resolve({ success: false }); },
+        exit_app: function() {},
+        open_download_url: function(url) { if (url) window.open(url); }
+    };
+
+    let CREATURES_DATA = { 어류: [], 곤충: [], 조류: [], 요리: [] };
+    const CATEGORY_CONFIG = { '어류': { icon: '🐟', order: 1 }, '곤충': { icon: '🦋', order: 2 }, '조류': { icon: '🦅', order: 3 }, '요리': { icon: '🍳', order: 4 } };
+    let _userState = { stars: {}, priceStars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: { currentTab: '어류', sortBy: 'level-asc' } };
+
+    function getApi() {
+        if (window.pywebview && window.pywebview.api) return window.pywebview.api;
+        return webApi;
+    }
+
+    const Storage = {
+        loadStars() { return _userState.stars || {}; },
+        saveStars(s) { _userState.stars = s; var api = getApi(); if (api) api.save_user_data(s, null, null); },
+        loadUserCreatures() { return _userState.userCreatures || { 어류: [], 곤충: [], 조류: [], 요리: [] }; },
+        saveUserCreatures(c) { _userState.userCreatures = c; var api = getApi(); if (api) api.save_user_data(null, c, null); },
+        loadSettings() { return _userState.settings || { currentTab: '어류', sortBy: 'level-asc' }; },
+        saveSettings(s) { _userState.settings = s; var api = getApi(); if (api) api.save_user_data(null, null, s); }
+    };
+
+    function isWeirdFood(item) {
+        if (!item) return false;
+        var n = (item.명칭 || '') + (item.비고 || '');
+        return n.indexOf('괴상') >= 0;
+    }
+
+    const CardManager = {
+        stars: {},
+        priceStars: {},
+        getStars(cat, name) { return this.stars[cat + '_' + name] || 0; },
+        getPriceStars(cat, name) { return this.priceStars[cat + '_' + name] ?? 1; },
+        setStars(cat, name, rating) {
+            var item = (CREATURES_DATA[cat] || []).concat(App.userCreatures[cat] || []).find(function(c) { return c.명칭 === name; });
+            if (cat === '요리' && isWeirdFood(item)) rating = Math.min(1, rating);
+            const key = cat + '_' + name;
+            const cur = this.stars[key] || 0;
+            this.stars[key] = (cur === 1 && rating === 1) ? 0 : rating;
+            Storage.saveStars(this.stars);
+            App.render();
+        },
+        setPriceStars(cat, name, rating) {
+            var item = (CREATURES_DATA[cat] || []).concat(App.userCreatures[cat] || []).find(function(c) { return c.명칭 === name; });
+            if (cat === '요리' && isWeirdFood(item)) rating = 1;
+            const key = cat + '_' + name;
+            this.priceStars[key] = Math.max(1, Math.min(5, rating));
+            App.render();
+        },
+        createListItem(item, cat) {
+            const isRecipe = cat === '요리';
+            const name = item.명칭 || '';
+            const weird = isRecipe && isWeirdFood(item);
+            var stars = this.getStars(cat, name);
+            var priceStars = this.getPriceStars(cat, name);
+            if (weird) { stars = Math.min(1, stars); priceStars = 1; }
+            const wrap = document.createElement('div');
+            wrap.className = 'list-item' + (stars === 5 ? ' collected' : '');
+            wrap.dataset.category = cat;
+            wrap.dataset.name = name;
+            const displayName = (isRecipe && (name.indexOf('획득 불가') >= 0 || (item.비고 || '').indexOf('획득 불가') >= 0)) ? '❌ ' + name : name;
+            const nameRow = document.createElement('div');
+            nameRow.className = 'list-item-name';
+            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(displayName) + '</span><span class="chevron">▼</span>';
+            nameRow.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const grid = document.getElementById('dataGrid');
+                const wasOpen = wrap.classList.contains('open');
+                const previousOpenEl = grid.querySelector('.list-item.open');
+                const previousOpenName = previousOpenEl ? previousOpenEl.dataset.name : null;
+                if (wasOpen) { App.closeOpenCard(); return; }
+                grid.querySelectorAll('.list-item.open').forEach(el => { el.classList.remove('open'); });
+                wrap.classList.add('open');
+                App.openCard = { tab: App.currentTab, name: wrap.dataset.name };
+                App.ghostCard = (previousOpenEl && previousOpenEl !== wrap && previousOpenName) ? { tab: App.currentTab, name: previousOpenName } : null;
+                App.render();
+            };
+            wrap.appendChild(nameRow);
+            const detail = document.createElement('div');
+            detail.className = 'list-item-detail';
+            function addRow(label, value) { if (value === undefined || value === null || value === '') return; const r = document.createElement('div'); r.className = 'detail-row'; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span><span class="detail-value">' + escapeHtml(value) + '</span>'; detail.appendChild(r); }
+            function addRowPre(label, value) { if (value === undefined || value === null || value === '') return; const r = document.createElement('div'); r.className = 'detail-row'; const v = document.createElement('span'); v.className = 'detail-value'; v.style.whiteSpace = 'pre-line'; v.textContent = value; r.innerHTML = '<span class="detail-label">' + escapeHtml(label) + '</span>'; r.appendChild(v); detail.appendChild(r); }
+            if (isRecipe) {
+                if (item.레벨 != null && item.레벨 !== '') addRow('필요 취미 레벨', formatLevelDisplay(item.레벨));
+                addRowPre('재료', item.재료);
+                addRow('레시피', item.레시피);
+                const basePrice = parseFloat(item.가격) || 0;
+                const mult = STAR_MULT[priceStars] || 1;
+                const calcPrice = Math.round(basePrice * mult);
+                const priceRow = document.createElement('div');
+                priceRow.className = 'detail-row detail-row-price';
+                const priceVal = document.createElement('span');
+                priceVal.className = 'detail-value';
+                priceVal.style.display = 'flex';
+                priceVal.style.alignItems = 'center';
+                priceVal.style.justifyContent = 'flex-end';
+                priceVal.style.gap = '8px';
+                priceRow.innerHTML = '<span class="detail-label">가격</span>';
+                if (weird) priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <span class="star-display">★1</span>';
+                else { priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <button type="button" class="star-adj" data-dir="-">−</button> <span class="star-display">★' + priceStars + '</span> <button type="button" class="star-adj" data-dir="+">+</button>'; }
+                priceRow.appendChild(priceVal);
+                if (!weird) { priceRow.querySelector('.star-adj').onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars - 1); }; priceRow.querySelectorAll('.star-adj')[1].onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars + 1); }; }
+                detail.appendChild(priceRow);
+                addRow('비고', item.비고);
+                const starRow = document.createElement('div');
+                starRow.className = 'detail-row';
+                starRow.innerHTML = '<span class="detail-label">⭐ 수집</span>';
+                const starC = document.createElement('div');
+                starC.className = 'star-rating';
+                for (let i = 1; i <= (weird ? 1 : 5); i++) {
+                    const s = document.createElement('span');
+                    s.className = 'star ' + (i <= stars ? 'filled' : '');
+                    s.textContent = '★';
+                    s.onclick = e => { e.stopPropagation(); this.setStars(cat, name, i); };
+                    starC.appendChild(s);
+                }
+                starRow.appendChild(starC);
+                detail.appendChild(starRow);
+            } else {
+                addRow('🚩 지역', item.지역);
+                addRow('📌 세부지역', item.세부지역);
+                addRow('필요 취미 레벨', item.레벨 != null && item.레벨 !== '' ? formatLevelDisplay(item.레벨) : '');
+                addRow('🌤️ 날씨', item.날씨영향);
+                addRow('🕐 시간대', item.시간대);
+                addRow('크기', formatInteger(item.크기) || item.크기 || '');
+                if (cat === '어류') {
+                    const basePrice = parseFloat(item.가격) || 0;
+                    const mult = STAR_MULT[priceStars] || 1;
+                    const calcPrice = Math.round(basePrice * mult);
+                    const priceRow = document.createElement('div');
+                    priceRow.className = 'detail-row detail-row-price';
+                    const priceVal = document.createElement('span');
+                    priceVal.className = 'detail-value';
+                    priceVal.style.display = 'flex';
+                    priceVal.style.alignItems = 'center';
+                    priceVal.style.justifyContent = 'flex-end';
+                    priceVal.style.gap = '8px';
+                    priceVal.innerHTML = '<span class="price-num">' + calcPrice + '</span> <button type="button" class="star-adj" data-dir="-">−</button> <span class="star-display">★' + priceStars + '</span> <button type="button" class="star-adj" data-dir="+">+</button>';
+                    priceRow.innerHTML = '<span class="detail-label">가격</span>';
+                    priceRow.appendChild(priceVal);
+                    priceRow.querySelector('.star-adj').onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars - 1); };
+                    priceRow.querySelectorAll('.star-adj')[1].onclick = e => { e.stopPropagation(); this.setPriceStars(cat, name, priceStars + 1); };
+                    detail.appendChild(priceRow);
+                }
+                addRow('비고', item.비고);
+                const starRow = document.createElement('div');
+                starRow.className = 'detail-row';
+                starRow.innerHTML = '<span class="detail-label">⭐ 수집</span>';
+                const starC = document.createElement('div');
+                starC.className = 'star-rating';
+                for (let i = 1; i <= 5; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'star ' + (i <= stars ? 'filled' : '');
+                    s.textContent = '★';
+                    s.onclick = e => { e.stopPropagation(); this.setStars(cat, name, i); };
+                    starC.appendChild(s);
+                }
+                starRow.appendChild(starC);
+                detail.appendChild(starRow);
+            }
+            wrap.appendChild(detail);
+            return wrap;
+        },
+        createGhost(item, cat) {
+            const name = item.명칭 || '';
+            const isRecipeGhost = cat === '요리';
+            const displayName = (isRecipeGhost && (name.indexOf('획득 불가') >= 0 || (item.비고 || '').indexOf('획득 불가') >= 0)) ? '❌ ' + name : name;
+            const wrap = document.createElement('div');
+            wrap.className = 'list-item list-item-ghost';
+            wrap.dataset.category = cat;
+            wrap.dataset.name = name;
+            const overlay = document.createElement('button');
+            overlay.type = 'button';
+            overlay.className = 'ghost-overlay';
+            overlay.setAttribute('aria-label', '닫기: ' + name);
+            overlay.onclick = function(e) { e.preventDefault(); e.stopPropagation(); App.closeOpenCard(); };
+            wrap.appendChild(overlay);
+            const nameRow = document.createElement('div');
+            nameRow.className = 'list-item-name';
+            nameRow.innerHTML = '<span class="icon">' + (CATEGORY_CONFIG[cat]?.icon || '📦') + '</span><span class="name">' + escapeHtml(displayName) + '</span><span class="chevron">▼</span>';
+            nameRow.style.pointerEvents = 'none';
+            wrap.appendChild(nameRow);
+            const detail = document.createElement('div');
+            detail.className = 'list-item-detail';
+            detail.style.pointerEvents = 'none';
+            wrap.appendChild(detail);
+            return wrap;
+        }
+    };
+    function escapeHtml(s) {
+        if (s == null) return '';
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+    function formatInteger(v) {
+        if (v == null || v === '') return '';
+        const n = parseFloat(v);
+        return isNaN(n) ? '' : String(Math.round(n));
+    }
+    function formatLevelDisplay(l) {
+        if (l == null || l === '') return '';
+        const s = String(l).trim();
+        if (s.indexOf('빙설') >= 0) return '☃️ ' + s;
+        if (s.indexOf('획득불가') >= 0 || s.indexOf('획득 불가') >= 0) return '❌ ' + s;
+        return 'Lv.' + (formatInteger(l) || s);
+    }
+    const STAR_MULT = { 1: 1, 2: 1.5, 3: 2, 4: 4, 5: 8 };
+
+    const FilterManager = {
+        filter(creatures, opt) {
+            return creatures.filter(c => {
+                if (opt.search) {
+                    const searchText = (opt.category === '요리') ? (c.명칭 + (c.재료||'') + (c.레시피||'')) : (c.명칭 + (c.지역||'') + (c.세부지역||''));
+                    if (!searchText.toLowerCase().includes(opt.search.toLowerCase())) return false;
+                }
+                if (opt.level && c.레벨 !== opt.level) return false;
+                if (opt.category !== '요리') {
+                    if (opt.location && c.지역 !== opt.location) return false;
+                    if (opt.weather) {
+                        const w = c.날씨영향 || '';
+                        if (opt.weather === '비' && !w.includes('비')) return false;
+                        if (opt.weather === '해' && !w.includes('해')) return false;
+                        if (opt.weather === '무지개' && !w.includes('무지개')) return false;
+                        if (opt.weather === '맑은 날' && !w.includes('맑')) return false;
+                    }
+                }
+                if (opt.hideCompleted && CardManager.getStars(opt.category, c.명칭) >= 5) return false;
+                return true;
+            });
+        },
+        levelNum(item) {
+            const v = item.레벨;
+            if (v == null || v === '') return 0;
+            const n = parseFloat(v);
+            return !isNaN(n) ? n : 20;
+        },
+        sort(creatures, sortBy, cat) {
+            const sorted = [...creatures];
+            if (cat === '요리') {
+                if (sortBy === 'excel') return sorted;
+                sorted.sort((a, b) => {
+                    const pA = parseFloat(a.가격) || 0, pB = parseFloat(b.가격) || 0;
+                    if (pA !== pB) return sortBy === 'price-desc' ? pB - pA : pA - pB;
+                    return (a.명칭 || '').localeCompare(b.명칭 || '');
+                });
+                return sorted;
+            }
+            sorted.sort((a, b) => {
+                const lA = FilterManager.levelNum(a), lB = FilterManager.levelNum(b);
+                if (lA !== lB) return sortBy === 'level-asc' ? lA - lB : lB - lA;
+                return (a.명칭 || '').localeCompare(b.명칭 || '');
+            });
+            return sorted;
+        },
+        getUnique(creatures, field) {
+            const vals = new Set();
+            creatures.forEach(c => { if (c[field]) vals.add(c[field]); });
+            return Array.from(vals).sort();
+        }
+    };
+
+    function renderTabs() {
+        const container = document.getElementById('tabsContainer');
+        container.innerHTML = '';
+        const sorted = Object.entries(CATEGORY_CONFIG).sort((a, b) => a[1].order - b[1].order);
+        sorted.forEach(([name, config]) => {
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn' + (name === App.currentTab ? ' active' : '');
+            btn.dataset.category = name;
+            btn.innerHTML = config.icon + ' ' + name + ' <span class="count" id="count-' + name + '">0</span>';
+            btn.addEventListener('click', () => App.switchTab(name));
+            container.appendChild(btn);
+        });
+    }
+
+    const App = {
+        currentTab: '어류',
+        userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] },
+        openCard: null,
+        ghostCard: null,
+        closeOpenCard() {
+            if (this.openCard == null && this.ghostCard == null) return;
+            this.openCard = null;
+            this.ghostCard = null;
+            this.render();
+        },
+        init() {
+            CardManager.stars = Storage.loadStars();
+            this.userCreatures = Storage.loadUserCreatures();
+            const settings = Storage.loadSettings();
+            this.currentTab = settings.currentTab || '어류';
+            if (settings.darkMode) {
+                document.body.classList.add('dark');
+                document.getElementById('darkModeToggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('dark');
+                document.getElementById('darkModeToggle').textContent = '🌙';
+            }
+            renderTabs();
+            this.setupEvents();
+            this.updateFilters();
+            this.switchTab(this.currentTab);
+        },
+        setupEvents() {
+            ['searchBox', 'locationFilter', 'levelFilter', 'weatherFilter', 'hideCompleted', 'recipeSortBy'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => this.render());
+            });
+            document.getElementById('btnRefresh').addEventListener('click', () => this.refreshFromDrive());
+            document.getElementById('darkModeToggle').addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark');
+                const st = Storage.loadSettings();
+                Storage.saveSettings({ ...st, darkMode: isDark });
+                document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+                document.getElementById('darkModeToggle').title = isDark ? '라이트 모드' : '다크 모드';
+            });
+            const grid = document.getElementById('dataGrid');
+            grid.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.list-item-ghost') || e.target.closest('.list-item.open .list-item-name')) { e.preventDefault(); e.stopPropagation(); App.closeOpenCard(); }
+            }, true);
+            grid.addEventListener('click', (e) => {
+                if (e.target.closest('.list-item-ghost') || e.target.closest('.list-item.open .list-item-name')) { e.preventDefault(); e.stopPropagation(); App.closeOpenCard(); }
+            }, true);
+        },
+        switchTab(cat) {
+            this.currentTab = cat;
+            this.openCard = null;
+            this.ghostCard = null;
+            document.getElementById('searchBox').value = '';
+            document.getElementById('locationFilter').value = '';
+            document.getElementById('levelFilter').value = '';
+            document.getElementById('weatherFilter').value = '';
+            document.getElementById('hideCompleted').checked = false;
+            var recipeSortEl = document.getElementById('recipeSortBy');
+            if (recipeSortEl) recipeSortEl.value = 'excel';
+            renderTabs();
+            this.updateFilters();
+            document.getElementById('searchBox').placeholder = cat === '요리' ? '🔍 요리 이름 검색' : '🔍 생물 이름 검색';
+            this.render();
+            window.scrollTo(0, 0);
+        },
+        updateFilters() {
+            const cat = this.currentTab;
+            const creatures = this.getAll(cat);
+            const isRecipe = cat === '요리';
+            document.getElementById('locationFilter').style.display = isRecipe ? 'none' : '';
+            document.getElementById('levelFilter').style.display = '';
+            document.getElementById('weatherFilter').style.display = isRecipe ? 'none' : '';
+            const recipeSortEl = document.getElementById('recipeSortBy');
+            if (recipeSortEl) recipeSortEl.style.display = isRecipe ? '' : 'none';
+            if (isRecipe && recipeSortEl) {
+                const st = Storage.loadSettings();
+                const v = (st.recipeSortBy || 'excel');
+                if (['excel', 'price-asc', 'price-desc'].indexOf(v) >= 0) recipeSortEl.value = v;
+            }
+            const locs = FilterManager.getUnique(creatures, '지역');
+            const locSel = document.getElementById('locationFilter');
+            const cur = locSel.value;
+            locSel.innerHTML = '<option value="">🚩 지역 전체</option>';
+            locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
+            if (locs.includes(cur)) locSel.value = cur;
+            const levs = FilterManager.getUnique(creatures, '레벨').filter(l => l);
+            levs.sort((a, b) => {
+                const na = parseFloat(a), nb = parseFloat(b);
+                if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                if (!isNaN(na)) return -1;
+                if (!isNaN(nb)) return 1;
+                return String(a).localeCompare(b);
+            });
+            const levSel = document.getElementById('levelFilter');
+            const curL = levSel.value;
+            levSel.innerHTML = '<option value="">필요 취미 레벨 전체</option>';
+            levs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = formatLevelDisplay(l); levSel.appendChild(o); });
+            if (levs.includes(curL)) levSel.value = curL;
+            const weathers = new Set();
+            creatures.forEach(c => {
+                if (c.날씨영향) {
+                    if (c.날씨영향.includes('비')) weathers.add('비');
+                    if (c.날씨영향.includes('해')) weathers.add('해');
+                    if (c.날씨영향.includes('무지개')) weathers.add('무지개');
+                    if (c.날씨영향.includes('맑')) weathers.add('맑은 날');
+                }
+            });
+            const wSel = document.getElementById('weatherFilter');
+            const curW = wSel.value;
+            wSel.innerHTML = '<option value="">🌤️ 날씨 전체</option>';
+            Array.from(weathers).sort().forEach(w => {
+                const o = document.createElement('option'); o.value = w;
+                o.textContent = (w === '맑은 날' ? '☀️ ' : w === '무지개' ? '🌈 ' : w === '비' ? '🌧️ ' : w === '해' ? '☀️ ' : '') + w;
+                wSel.appendChild(o);
+            });
+            if (weathers.has(curW)) wSel.value = curW;
+        },
+        getAll(cat) {
+            return [...(CREATURES_DATA[cat] || []), ...(this.userCreatures[cat] || [])];
+        },
+        render() {
+            const grid = document.getElementById('dataGrid');
+            let openCard = (this.openCard && this.openCard.tab === this.currentTab) ? this.openCard : null;
+            grid.innerHTML = '';
+            grid.classList.remove('loading');
+            const opt = {
+                category: this.currentTab,
+                search: document.getElementById('searchBox').value.trim(),
+                location: document.getElementById('locationFilter').value,
+                level: document.getElementById('levelFilter').value,
+                weather: document.getElementById('weatherFilter').value,
+                hideCompleted: document.getElementById('hideCompleted').checked
+            };
+            let creatures = this.getAll(this.currentTab);
+            creatures = FilterManager.filter(creatures, opt);
+            if (this.currentTab === '요리') {
+                const recipeSortEl = document.getElementById('recipeSortBy');
+                const recipeSortBy = (recipeSortEl && recipeSortEl.value) ? recipeSortEl.value : 'excel';
+                creatures = FilterManager.sort(creatures, recipeSortBy, '요리');
+            }
+            if (creatures.length === 0) {
+                const e = document.createElement('div');
+                e.className = 'empty-state';
+                e.innerHTML = '<div class="empty-state-icon">🔍</div><div class="empty-state-text">검색 결과가 없습니다</div>';
+                grid.appendChild(e);
+            } else {
+                const ghostFor = openCard && openCard.tab === this.currentTab ? openCard : null;
+                creatures.forEach(c => {
+                    if (ghostFor && ghostFor.name === c.명칭) grid.appendChild(CardManager.createGhost(c, this.currentTab));
+                    const el = CardManager.createListItem(c, this.currentTab);
+                    if (openCard && openCard.name === c.명칭) el.classList.add('open');
+                    grid.appendChild(el);
+                });
+            }
+            this.updateCounts();
+            this.saveSettings();
+        },
+        updateCounts() {
+            Object.keys(CATEGORY_CONFIG).forEach(c => {
+                const el = document.getElementById('count-' + c);
+                if (el) el.textContent = this.getAll(c).length;
+            });
+        },
+        saveSettings() {
+            const prev = Storage.loadSettings();
+            const s = { ...prev, currentTab: this.currentTab };
+            const recipeSortEl = document.getElementById('recipeSortBy');
+            if (this.currentTab === '요리' && recipeSortEl) s.recipeSortBy = recipeSortEl.value;
+            Storage.saveSettings(s);
+        },
+        async refreshFromDrive() {
+            var api = getApi();
+            if (!api) return;
+            document.getElementById('dataGrid').innerHTML = '<div class="loading">데이터를 다시 불러오는 중...</div>';
+            document.getElementById('dataGrid').classList.add('loading');
+            try {
+                var data = await api.refresh_data();
+                CREATURES_DATA = data.base || CREATURES_DATA;
+                _userState = data.user || _userState;
+                CardManager.stars = _userState.stars || {};
+                App.userCreatures = _userState.userCreatures || { 어류: [], 곤충: [], 조류: [], 요리: [] };
+                var total = (CREATURES_DATA.어류||[]).length + (CREATURES_DATA.곤충||[]).length + (CREATURES_DATA.조류||[]).length + (CREATURES_DATA.요리||[]).length;
+                var errHint = document.getElementById('dataErrorHint');
+                if (errHint) { errHint.textContent = data.lastError || ''; errHint.style.display = (total === 0 && data.lastError) ? 'block' : 'none'; }
+                document.getElementById('emptyDataHint').style.display = total === 0 ? 'block' : 'none';
+                setVersionInfo(data.appVersion, data.dataVersion);
+                App.updateFilters();
+                App.render();
+            } catch (e) {
+                alert('새로고침 실패: ' + (e.message || e));
+            }
+        }
+    };
+
+    function setVersionInfo(appVersion, dataVersion) {
+        var el = document.getElementById('versionInfo');
+        if (!el) return;
+        el.textContent = appVersion ? 'v' + appVersion : '';
+    }
+
+    function checkAppUpdate(silentIfLatest) {
+        var api = getApi();
+        if (!api) return;
+        Promise.all([ api.check_app_update(), api.check_data_update ? api.check_data_update() : Promise.resolve({ hasUpdate: false, latestVersion: '' }) ]).then(function(arr) {
+            var appResult = arr[0];
+            var dataResult = arr[1] || { hasUpdate: false, currentVersion: '', latestVersion: '' };
+            var updateMessage = document.getElementById('updateMessage');
+            var updateDataHint = document.getElementById('updateDataHint');
+            var updateHint = document.getElementById('updateHint');
+            var modal = document.getElementById('updateModal');
+            var btnApply = document.getElementById('btnUpdateApply');
+            var btnDownload = document.getElementById('btnUpdateDownload');
+            updateDataHint.style.display = 'none';
+            updateDataHint.textContent = '';
+            if (dataResult.hasUpdate && dataResult.latestVersion) {
+                updateDataHint.textContent = '도감 데이터 v' + dataResult.latestVersion + ' 사용 가능. "데이터 새로고침"으로 적용하세요.';
+                updateDataHint.style.display = 'block';
+            }
+            if (!appResult.hasUpdate) {
+                if (silentIfLatest && !dataResult.hasUpdate) return;
+                updateMessage.textContent = dataResult.hasUpdate ? '도감 데이터만 새로 받을 수 있습니다.' : '앱과 도감 데이터 모두 최신 버전입니다.';
+                updateHint.style.display = 'none';
+                btnApply.style.display = 'none';
+                btnDownload.style.display = 'none';
+                document.getElementById('closeUpdateModal').onclick = function() { modal.classList.remove('show'); };
+                modal.classList.add('show');
+                return;
+            }
+            updateMessage.textContent = appResult.message + ' (버전 ' + appResult.version + ')';
+            updateHint.style.display = 'block';
+            btnApply.style.display = 'block';
+            btnDownload.style.display = 'block';
+            var downloadUrl = appResult.download_url || '';
+            var driveFileId = appResult.exe_file_id || '';
+            btnApply.onclick = function() {
+                btnApply.disabled = true;
+                api.apply_update(downloadUrl, driveFileId).then(function(result) {
+                    if (result.success) { setTimeout(function() { api.exit_app(); }, 600); }
+                    else { btnApply.disabled = false; alert(result.error || '업데이트 적용에 실패했습니다.'); }
+                });
+            };
+            btnDownload.onclick = function() {
+                if (downloadUrl) api.open_download_url(downloadUrl);
+                else if (driveFileId) api.open_download_url('https://drive.google.com/uc?export=download&id=' + driveFileId);
+                modal.classList.remove('show');
+            };
+            document.getElementById('closeUpdateModal').onclick = function() { modal.classList.remove('show'); };
+            modal.classList.add('show');
+        }).catch(function() {});
+    }
+
+    function bootstrap(data) {
+        CREATURES_DATA = data.base || CREATURES_DATA;
+        _userState = data.user || _userState;
+        document.getElementById('loadingState').remove();
+        var total = (CREATURES_DATA.어류||[]).length + (CREATURES_DATA.곤충||[]).length + (CREATURES_DATA.조류||[]).length + (CREATURES_DATA.요리||[]).length;
+        var hint = document.getElementById('emptyDataHint');
+        var errHint = document.getElementById('dataErrorHint');
+        if (hint) hint.style.display = total === 0 ? 'block' : 'none';
+        if (errHint) { errHint.textContent = data.lastError || ''; errHint.style.display = (total === 0 && data.lastError) ? 'block' : 'none'; }
+        setVersionInfo(data.appVersion, data.dataVersion);
+        App.init();
+        setTimeout(function() { checkAppUpdate(false); }, 500);
+    }
+
+    function runBootstrap() {
+        var api = getApi();
+        if (!api) {
+            document.getElementById('loadingState').textContent = 'API를 사용할 수 없습니다.';
+            return;
+        }
+        api.get_app_data().then(bootstrap).catch(function(err) {
+            document.getElementById('loadingState').textContent = '데이터 로드 실패: ' + (err.message || err);
+        });
+    }
+    if (window.pywebview) {
+        window.addEventListener('pywebviewready', runBootstrap);
+    } else {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', runBootstrap);
+        else runBootstrap();
+    }
+})();
+    </script>
+</body>
+</html>
