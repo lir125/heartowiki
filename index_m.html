@@ -95,12 +95,13 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     .tabs { padding: 8px 6px; gap: 4px; flex-wrap: nowrap; justify-content: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .tab-btn { padding: 8px 10px; font-size: 12px; min-height: 38px; min-width: 0; flex-shrink: 0; white-space: nowrap; }
     .tab-btn .count { font-size: 11px; margin-left: 2px; }
-    .controls { margin: 8px auto; padding: 0 10px 6px; }
-    .filter-row { flex-direction: column; gap: 6px; margin-bottom: 4px; align-items: stretch; }
-    .search-box { width: 100%; min-width: 0; flex: none; }
+    .controls { margin: 8px auto; padding: 0 10px 6px; max-width: 100%; overflow: hidden; }
+    .filter-row { flex-direction: column; gap: 6px; margin-bottom: 4px; align-items: stretch; min-width: 0; }
+    .search-box { width: 100%; min-width: 0; flex: none; max-width: 100%; }
     .search-box input { height: 36px; padding: 0 10px; font-size: 16px; }
-    .filter-selects-row { display: flex; gap: 6px; flex-wrap: nowrap; min-width: 0; }
-    .filter-selects-row select { height: 36px; padding: 0 10px; font-size: 16px; flex: 1; min-width: 0; width: auto; }
+    .filter-selects-row { display: flex; gap: 6px; flex-wrap: nowrap; min-width: 0; width: 100%; }
+    .filter-selects-row select { height: 36px; padding: 0 8px; font-size: 14px; flex: 1 1 0; min-width: 0; width: 0; max-width: calc((100% - 12px) / 3); box-sizing: border-box; }
+    .filter-selects-row select#recipeSortBy { max-width: calc((100% - 18px) / 4); }
     .action-row { margin-bottom: 0; gap: 8px; min-height: 36px; align-items: center; }
     .action-row label { font-size: 13px; min-height: auto; }
     .action-row label input { width: 18px; height: 18px; }
@@ -127,7 +128,9 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 }
 @media (max-width: 480px) {
     header { padding: 14px 10px 12px; }
-    .filter-selects-row select { font-size: 14px; padding: 0 6px; }
+    .controls { padding: 0 8px 6px; }
+    .filter-selects-row select { font-size: 13px; padding: 0 4px; max-width: calc((100% - 12px) / 3); }
+    .filter-selects-row select#recipeSortBy { max-width: calc((100% - 18px) / 4); }
 }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
