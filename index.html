@@ -351,7 +351,8 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     function formatLevelDisplay(l) {
         if (l == null || l === '') return '';
         const s = String(l).trim();
-        if (s.indexOf('빙설') >= 0) return '☃️ ' + s;
+        if (s.indexOf('꿈의명암') >= 0 || s.indexOf('꿈의 명암') >= 0) return '🎬 ' + s;
+        if (s.indexOf('빙설') >= 0 || s.indexOf('빙결') >= 0) return '☃️ ' + s;
         if (s.indexOf('획득불가') >= 0 || s.indexOf('획득 불가') >= 0) return '❌ ' + s;
         return 'Lv.' + (formatInteger(l) || s);
     }
