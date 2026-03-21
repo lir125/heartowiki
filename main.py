@@ -493,13 +493,13 @@ def _xlsx_to_creatures_data(raw: bytes) -> dict:
                 "비고": "",
             })
 
-    # 미식 라이프: 이름, 레벨, 재료, 레시피, 가격, 비고
+    # 미식 라이프: 이름/명칭, 레벨, 재료, 레시피, 가격, 비고
     if "미식 라이프" in wb.sheetnames:
         ws = wb["미식 라이프"]
         rows = list(ws.iter_rows(values_only=True))
         if rows:
             first = [str(c).strip() if c is not None else "" for c in rows[0]]
-            i_name = col_index(first, "이름")
+            i_name = col_index_any(first, ["이름", "명칭"])
             i_level = col_index(first, "레벨")
             i_ing = col_index(first, "재료")
             i_recipe = col_index(first, "레시피")
@@ -743,6 +743,7 @@ def get_base_data() -> dict:
         branch = (config.get("github_data_branch") or "main").strip()
         path = "heartowiki.xlsx"  # 항상 저장소 루트의 heartowiki.xlsx
         _cached_base = _fetch_data_from_github(repo, branch, path)
+        _last_data_error = ""  # 성공 시 이전 실패 메시지 제거
         # 성공 시 데이터 폴더에 JSON으로 캐시 저장 (cache.json)
         with open(CACHE_PATH, "w", encoding="utf-8") as f:
             json.dump(_cached_base, f, ensure_ascii=False, indent=2)
