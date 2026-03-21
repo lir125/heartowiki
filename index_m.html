@@ -189,7 +189,8 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     var XLSX_PATH = 'heartowiki.xlsx';
     var WEB_XLSX_URL = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/' + GITHUB_BRANCH + '/' + XLSX_PATH;
     var GITHUB_API_XLSX_URL = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + XLSX_PATH + '?ref=' + GITHUB_BRANCH;
-    var LS_BASE = 'heartowiki_m_base';
+    /* 버전 bump 시 예전 localStorage 캐시 무시 (꿈의명암 등 누락 방지) */
+    var LS_BASE = 'heartowiki_m_base_v2';
     var LS_COLLECTION = 'heartowiki_m_collection';
     var LS_SETTINGS = 'heartowiki_m_settings';
 
@@ -213,13 +214,13 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     }
     function xlsxToCreaturesData(ab) {
         if (typeof XLSX === 'undefined') throw new Error('엑셀 파싱 라이브러리를 불러올 수 없습니다.');
-        var wb = XLSX.read(ab, { type: 'array', cellDates: false, cellNF: false, cellText: false });
+        var wb = XLSX.read(ab, { type: 'array', cellDates: false, cellNF: false, cellText: false, dense: true });
         var result = { 어류: [], 곤충: [], 조류: [], 요리: [] };
         var names = wb.SheetNames || [];
 
         if (names.indexOf('도감 정보') >= 0) {
             var wsInfo = wb.Sheets['도감 정보'];
-            var rowsInfo = XLSX.utils.sheet_to_json(wsInfo, { header: 1 });
+            var rowsInfo = XLSX.utils.sheet_to_json(wsInfo, { header: 1, defval: '' });
             if (rowsInfo && rowsInfo.length > 1) {
                 var firstInfo = rowsInfo[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
                 var iVer = firstInfo.indexOf('도감 버전');
@@ -230,7 +231,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
 
         var sheetFish = names.indexOf('어류 관찰') >= 0 ? '어류 관찰' : (names.indexOf('어류') >= 0 ? '어류' : null);
         if (sheetFish) {
-            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetFish], { header: 1 });
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetFish], { header: 1, defval: '' });
             if (rows && rows.length > 0) {
                 var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
                 var iName = colIndexAny(first, ['이름', '명칭']);
@@ -250,7 +251,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         var sheetBirds = names.indexOf('새 관찰 일지') >= 0 ? '새 관찰 일지' : (names.indexOf('조류') >= 0 ? '조류' : (names.indexOf('새') >= 0 ? '새' : null));
         if (!sheetBirds) { for (var n = 0; n < names.length; n++) { if ((names[n] || '').indexOf('조류') >= 0) { sheetBirds = names[n]; break; } } }
         if (sheetBirds) {
-            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetBirds], { header: 1 });
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetBirds], { header: 1, defval: '' });
             if (rows && rows.length > 0) {
                 var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
                 var iName = colIndexAny(first, ['이름', '명칭']);
@@ -270,7 +271,7 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         var sheetBug = names.indexOf('곤충 이야기') >= 0 ? '곤충 이야기' : (names.indexOf('곤충') >= 0 ? '곤충' : null);
         if (!sheetBug) { for (var n = 0; n < names.length; n++) { if ((names[n] || '').indexOf('곤충') >= 0) { sheetBug = names[n]; break; } } }
         if (sheetBug) {
-            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetBug], { header: 1 });
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetBug], { header: 1, defval: '' });
             if (rows && rows.length > 0) {
                 var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
                 var iName = colIndexAny(first, ['이름', '명칭']);
@@ -288,10 +289,10 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
         }
 
         if (names.indexOf('미식 라이프') >= 0) {
-            var rows = XLSX.utils.sheet_to_json(wb.Sheets['미식 라이프'], { header: 1 });
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets['미식 라이프'], { header: 1, defval: '' });
             if (rows && rows.length > 0) {
                 var first = rows[0].map(function(c) { return (c != null ? String(c).trim() : ''); });
-                var iName = colIndex(first, '이름');
+                var iName = colIndexAny(first, ['이름', '명칭']);
                 if (iName >= 0) {
                     var iLevel = colIndex(first, '레벨'), iIng = colIndex(first, '재료'), iRecipe = colIndex(first, '레시피'), iPrice = colIndex(first, '가격'), iNote = colIndex(first, '비고');
                     for (var r = 1; r < rows.length; r++) {
@@ -360,15 +361,15 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
     var webApi = {
         get_app_data: function() {
             return new Promise(function(resolve) {
-                var base = { 어류: [], 곤충: [], 조류: [], 요리: [] };
+                var fallbackBase = { 어류: [], 곤충: [], 조류: [], 요리: [] };
                 try {
                     var cached = localStorage.getItem(LS_BASE);
                     if (cached) {
                         var parsed = JSON.parse(cached);
-                        if (parsed && (parsed.어류 || parsed.곤충 || parsed.조류 || parsed.요리)) base = parsed;
+                        if (parsed && (parsed.어류 || parsed.곤충 || parsed.조류 || parsed.요리)) fallbackBase = parsed;
                     }
                 } catch (e) {}
-                function loadUser() {
+                function buildUser() {
                     var user = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: { currentTab: '어류', sortBy: 'level-asc' } };
                     try {
                         var col = localStorage.getItem(LS_COLLECTION);
@@ -380,26 +381,25 @@ h1 { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); letter-spa
                         var set = localStorage.getItem(LS_SETTINGS);
                         if (set) { var s = JSON.parse(set); if (s) user.settings = s; }
                     } catch (e) {}
-                    resolve({ base: base, user: user, lastError: '', appVersion: '_web', dataVersion: base.data_version || '' });
+                    return user;
                 }
-                var total = (base.어류||[]).length + (base.곤충||[]).length + (base.조류||[]).length + (base.요리||[]).length;
-                if (total > 0) { loadUser(); return; }
+                /* 매번 GitHub에서 최신 xlsx 수신 (예전 캐시만 쓰면 꿈의명암 등 신규 행 누락됨). 실패 시에만 localStorage fallback */
                 fetchXlsx().then(function(ab) {
                     var data = xlsxToCreaturesData(ab);
                     if (data && (data.어류 || data.곤충 || data.조류 || data.요리)) {
                         try { localStorage.setItem(LS_BASE, JSON.stringify(data)); } catch (e) {}
-                        base = data;
+                        resolve({ base: data, user: buildUser(), lastError: '', appVersion: '_web', dataVersion: data.data_version || '' });
+                    } else {
+                        resolve({ base: fallbackBase, user: buildUser(), lastError: '', appVersion: '_web', dataVersion: fallbackBase.data_version || '' });
                     }
-                    loadUser();
                 }).catch(function(err) {
-                    resolve({ base: base, user: (function() {
-                        var u = { stars: {}, userCreatures: { 어류: [], 곤충: [], 조류: [], 요리: [] }, settings: {} };
-                        try {
-                            var col = localStorage.getItem(LS_COLLECTION); if (col) { var c = JSON.parse(col); if (c.stars) u.stars = c.stars; if (c.userCreatures) u.userCreatures = c.userCreatures; }
-                            var set = localStorage.getItem(LS_SETTINGS); if (set) u.settings = JSON.parse(set) || {};
-                        } catch (e) {}
-                        return u;
-                    })(), lastError: '도감 데이터를 불러오지 못했습니다. GitHub 저장소의 heartowiki.xlsx를 확인하세요. ' + (err.message || err), appVersion: 'web', dataVersion: '' });
+                    resolve({
+                        base: fallbackBase,
+                        user: buildUser(),
+                        lastError: '도감 데이터를 불러오지 못했습니다. GitHub 저장소의 heartowiki.xlsx를 확인하세요. ' + (err.message || err),
+                        appVersion: 'web',
+                        dataVersion: fallbackBase.data_version || ''
+                    });
                 });
             });
         },
